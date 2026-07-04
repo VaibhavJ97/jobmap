@@ -1,0 +1,88 @@
+:root {
+  --accent: #2d6a4f;
+  --accent-soft: #d8f3dc;
+  --ink: #1b1b1b;
+  --muted: #5f6b64;
+  --bg: #f7f9f8;
+  --card: #ffffff;
+  --border: #e2e8e4;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.5;
+}
+
+a { color: inherit; text-decoration: none; }
+
+.wrap { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1.25rem 3rem; }
+
+.site-head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; margin-bottom: 0.25rem; flex-wrap: wrap; }
+.site-title { font-size: 1.6rem; font-weight: 700; margin: 0; }
+.site-title span { color: var(--accent); }
+.site-sub { color: var(--muted); margin: 0 0 1.25rem; font-size: 0.95rem; }
+.back-link { color: var(--accent); font-size: 0.9rem; }
+
+.search-form { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.search-form input[type="text"] {
+  flex: 1 1 240px; min-width: 0;
+  padding: 0.7rem 0.9rem; border: 1px solid var(--border); border-radius: var(--radius);
+  font-size: 0.95rem; background: var(--card); color: var(--ink);
+}
+.search-form input:focus { outline: none; border-color: var(--accent); }
+.btn {
+  padding: 0.7rem 1.4rem; border: none; border-radius: var(--radius); cursor: pointer;
+  background: var(--accent); color: #fff; font-size: 0.95rem; font-weight: 600;
+}
+.btn:disabled { opacity: 0.6; cursor: default; }
+
+.meta { color: var(--muted); font-size: 0.88rem; margin: 0.25rem 0 1rem; }
+.warn { color: #9a6b00; font-size: 0.85rem; margin-bottom: 0.75rem; }
+
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
+@media (max-width: 880px) { .split { grid-template-columns: 1fr; } }
+
+.list { display: flex; flex-direction: column; gap: 0.75rem; max-height: 78vh; overflow-y: auto; padding-right: 4px; }
+
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 0.9rem 1rem; cursor: pointer; transition: border-color 0.12s, transform 0.12s;
+}
+.card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.card-top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: flex-start; }
+.card-title { font-weight: 600; font-size: 1rem; }
+.card-company { color: var(--muted); font-size: 0.9rem; margin-top: 0.15rem; }
+.card-loc { color: var(--muted); font-size: 0.85rem; margin-top: 0.15rem; }
+.badges { display: flex; gap: 0.35rem; flex-shrink: 0; align-items: center; flex-wrap: wrap; }
+
+.pill { font-size: 0.68rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; white-space: nowrap; }
+.pill-src { background: var(--accent-soft); color: var(--accent); }
+.pill-remote { background: #e6f0ff; color: #1f5fa5; }
+.match { font-size: 0.66rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 999px; }
+.match-strong { background: rgba(31,157,85,0.14); color: #1b7a45; }
+.match-good { background: rgba(201,138,22,0.14); color: #a06a12; }
+.match-weak { background: rgba(120,120,120,0.12); color: #6b6b6b; }
+
+.map-panel { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; height: 78vh; }
+.leaflet-container { height: 100%; width: 100%; }
+.map-pin {
+  background: var(--accent); color: #fff; border-radius: 999px; font-weight: 700; font-size: 12px;
+  display: flex; align-items: center; justify-content: center; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+.popup-job { display: block; padding: 3px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+.popup-job:last-child { border-bottom: none; }
+.popup-job:hover { color: var(--accent); }
+
+.empty { color: var(--muted); padding: 2rem 0; text-align: center; }
+
+.detail { max-width: 720px; }
+.detail h1 { font-size: 1.5rem; margin: 0.5rem 0 0.25rem; }
+.detail .desc { margin-top: 1rem; line-height: 1.65; }
+.detail .desc :is(h1,h2,h3) { font-size: 1rem; }
