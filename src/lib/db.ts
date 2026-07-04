@@ -26,6 +26,14 @@ export async function ensureSchema(): Promise<boolean> {
   if (_initialized) return true;
   try {
     await sql`
+      CREATE TABLE IF NOT EXISTS users (
+        id            BIGSERIAL PRIMARY KEY,
+        email         TEXT UNIQUE NOT NULL,
+        password_hash TEXT NOT NULL,
+        created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `;
+    await sql`
       CREATE TABLE IF NOT EXISTS saved_jobs (
         id         BIGSERIAL PRIMARY KEY,
         user_id    TEXT NOT NULL,

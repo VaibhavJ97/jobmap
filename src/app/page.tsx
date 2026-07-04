@@ -1,36 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import SearchForm from "@/components/SearchForm";
 import JobList from "@/components/JobList";
 import MapView from "@/components/MapView";
-import { fetchSaved, saveJob, removeJob } from "@/lib/tracker";
+import { fetchSaved, saveJob, removeJob, emailJob } from "@/lib/tracker";
 import type { Job, SearchResponse } from "@/lib/types";
 
 export default function Home() {
   const router = useRouter();
+  const { data: session, status } = useSession();
+  const authed = status === "authenticated";
+
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [meta, setMeta] = useState<{ total: number; duration: number } | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
   const [savedJobs, setSavedJobs] = useState<Job[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [showSaved, setShowSaved] = useState(false);
 
-  // Load this browser's saved jobs from the tracker on mount.
-  useEffect(() => {
-    fetchSaved().then((list) => {
-      setSavedJobs(list);
-      setSavedIds(new Set(list.map((j) => j.id)));
+  const loadSaved = useCallback(() => {
+    fetchSaved().then(({ saved }) => {
+      setSavedJobs(saved);
+      setSavedIds(new Set(saved.map((j) => j.id)));
     });
   }, []);
+
+  useEffect(() => {
+    if (authed) loadSaved();
+    else {
+      setSavedJobs([]);
+      setSavedIds(new Set());
+    }
+  }, [authed, loadSaved]);
 
   async function runSearch(keywords: string, location: string) {
     setLoading(true);
     setError("");
+    setNotice("");
     setShowSaved(false);
     try {
       const res = await fetch("/api/search", {
@@ -60,8 +73,11 @@ export default function Home() {
   }
 
   async function toggleSave(job: Job) {
+    if (!authed) {
+      router.push("/login");
+      return;
+    }
     const isSaved = savedIds.has(job.id);
-    // Optimistic UI update.
     setSavedIds((prev) => {
       const next = new Set(prev);
       if (isSaved) next.delete(job.id);
@@ -70,12 +86,18 @@ export default function Home() {
     });
     setSavedJobs((prev) => (isSaved ? prev.filter((j) => j.id !== job.id) : [job, ...prev]));
     const ok = isSaved ? await removeJob(job.id) : await saveJob(job);
-    if (!ok) {
-      // Revert on failure and refetch the source of truth.
-      const list = await fetchSaved();
-      setSavedJobs(list);
-      setSavedIds(new Set(list.map((j) => j.id)));
+    if (!ok) loadSaved();
+  }
+
+  async function onEmail(job: Job) {
+    if (!authed) {
+      router.push("/login");
+      return;
     }
+    setNotice("Sending…");
+    const res = await emailJob(job);
+    setNotice(res.ok ? `Emailed to ${res.to ?? "your inbox"}.` : res.error ?? "Could not send the email.");
+    setTimeout(() => setNotice(""), 4000);
   }
 
   const displayed = showSaved ? savedJobs : jobs;
@@ -86,9 +108,17 @@ export default function Home() {
         <h1 className="site-title">
           Job<span>Map</span>
         </h1>
-        <a className="back-link" href="https://vaibhavj97.vercel.app/">
-          &larr; Back to portfolio
-        </a>
+        <div className="head-right">
+          {authed ? (
+            <>
+              <span className="head-email">{session?.user?.email}</span>
+              <button className="link-btn" onClick={() => signOut({ callbackUrl: "/" })}>Sign out</button>
+            </>
+          ) : (
+            <a className="link-btn" href="/login">Sign in</a>
+          )}
+          <a className="back-link" href="https://vaibhavj97.vercel.app/">&larr; Portfolio</a>
+        </div>
       </div>
       <p className="site-sub">European tech jobs from multiple sources, ranked by relevance and plotted on a map.</p>
 
@@ -104,6 +134,7 @@ export default function Home() {
       </div>
 
       {error && <div className="warn">{error}</div>}
+      {notice && <div className="notice">{notice}</div>}
       {!showSaved && meta && (
         <p className="meta">
           {meta.total} job{meta.total !== 1 ? "s" : ""} in {meta.duration}s
@@ -115,12 +146,23 @@ export default function Home() {
             {w}
           </div>
         ))}
-      {showSaved && savedJobs.length === 0 && (
+      {showSaved && !authed && (
+        <p className="meta">
+          <a className="link-btn" href="/login">Sign in</a> to save and track jobs.
+        </p>
+      )}
+      {showSaved && authed && savedJobs.length === 0 && (
         <p className="meta">No saved jobs yet. Click &quot;Save&quot; on any job to keep it here.</p>
       )}
 
       <div className="split">
-        <JobList jobs={displayed} onOpen={openJob} savedIds={savedIds} onToggleSave={toggleSave} />
+        <JobList
+          jobs={displayed}
+          onOpen={openJob}
+          savedIds={savedIds}
+          onToggleSave={toggleSave}
+          onEmail={onEmail}
+        />
         <MapView jobs={displayed} onOpen={openJob} />
       </div>
     </main>

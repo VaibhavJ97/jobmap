@@ -2,29 +2,16 @@
 
 import type { Job } from "./types";
 
-// Anonymous per-browser id. In Phase 1c this is replaced by the signed-in
-// user's id, but the storage key and API contract stay the same.
-export function getUserId(): string {
-  if (typeof window === "undefined") return "";
-  let id = localStorage.getItem("jobmap:uid");
-  if (!id) {
-    id = (crypto.randomUUID?.() ?? `u_${Date.now()}_${Math.random().toString(36).slice(2)}`);
-    localStorage.setItem("jobmap:uid", id);
-  }
-  return id;
-}
+// Cookies (the Auth.js session) are sent automatically on same-origin fetches,
+// so no manual id header is needed anymore.
 
-function headers(): HeadersInit {
-  return { "Content-Type": "application/json", "x-user-id": getUserId() };
-}
-
-export async function fetchSaved(): Promise<Job[]> {
+export async function fetchSaved(): Promise<{ saved: Job[]; authenticated: boolean }> {
   try {
-    const res = await fetch("/api/tracker", { headers: headers() });
-    const data = (await res.json()) as { saved?: Job[] };
-    return data.saved ?? [];
+    const res = await fetch("/api/tracker");
+    const data = (await res.json()) as { saved?: Job[]; authenticated?: boolean };
+    return { saved: data.saved ?? [], authenticated: Boolean(data.authenticated) };
   } catch {
-    return [];
+    return { saved: [], authenticated: false };
   }
 }
 
@@ -32,7 +19,7 @@ export async function saveJob(job: Job): Promise<boolean> {
   try {
     const res = await fetch("/api/tracker", {
       method: "POST",
-      headers: headers(),
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ job }),
     });
     return res.ok;
@@ -43,12 +30,23 @@ export async function saveJob(job: Job): Promise<boolean> {
 
 export async function removeJob(jobId: string): Promise<boolean> {
   try {
-    const res = await fetch(`/api/tracker?jobId=${encodeURIComponent(jobId)}`, {
-      method: "DELETE",
-      headers: headers(),
-    });
+    const res = await fetch(`/api/tracker?jobId=${encodeURIComponent(jobId)}`, { method: "DELETE" });
     return res.ok;
   } catch {
     return false;
+  }
+}
+
+export async function emailJob(job: Job): Promise<{ ok: boolean; to?: string; error?: string }> {
+  try {
+    const res = await fetch("/api/email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ job }),
+    });
+    const data = (await res.json()) as { ok?: boolean; to?: string; error?: string };
+    return { ok: res.ok, to: data.to, error: data.error };
+  } catch {
+    return { ok: false, error: "Network error" };
   }
 }
