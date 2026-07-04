@@ -2,8 +2,7 @@
 
 import type { Job } from "./types";
 
-// Cookies (the Auth.js session) are sent automatically on same-origin fetches,
-// so no manual id header is needed anymore.
+// Cookies (the Auth.js session) are sent automatically on same-origin fetches.
 
 export async function fetchSaved(): Promise<{ saved: Job[]; authenticated: boolean }> {
   try {
@@ -34,19 +33,5 @@ export async function removeJob(jobId: string): Promise<boolean> {
     return res.ok;
   } catch {
     return false;
-  }
-}
-
-export async function emailJob(job: Job): Promise<{ ok: boolean; to?: string; error?: string }> {
-  try {
-    const res = await fetch("/api/email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ job }),
-    });
-    const data = (await res.json()) as { ok?: boolean; to?: string; error?: string };
-    return { ok: res.ok, to: data.to, error: data.error };
-  } catch {
-    return { ok: false, error: "Network error" };
   }
 }

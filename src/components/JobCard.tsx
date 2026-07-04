@@ -9,13 +9,11 @@ export default function JobCard({
   onOpen,
   saved,
   onToggleSave,
-  onEmail,
 }: {
   job: Job;
   onOpen: (job: Job) => void;
   saved: boolean;
   onToggleSave: (job: Job) => void;
-  onEmail: (job: Job) => void;
 }) {
   return (
     <div className="card" onClick={() => onOpen(job)}>
@@ -42,15 +40,6 @@ export default function JobCard({
           }}
         >
           {saved ? "\u2713 Saved" : "+ Save"}
-        </button>
-        <button
-          className="email-btn"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEmail(job);
-          }}
-        >
-          &#9993; Email me
         </button>
       </div>
     </div>

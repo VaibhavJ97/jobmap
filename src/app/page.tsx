@@ -6,7 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import SearchForm from "@/components/SearchForm";
 import JobList from "@/components/JobList";
 import MapView from "@/components/MapView";
-import { fetchSaved, saveJob, removeJob, emailJob } from "@/lib/tracker";
+import { fetchSaved, saveJob, removeJob } from "@/lib/tracker";
 import type { Job, SearchResponse } from "@/lib/types";
 
 export default function Home() {
@@ -19,7 +19,6 @@ export default function Home() {
   const [meta, setMeta] = useState<{ total: number; duration: number } | null>(null);
   const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
 
   const [savedJobs, setSavedJobs] = useState<Job[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
@@ -43,7 +42,6 @@ export default function Home() {
   async function runSearch(keywords: string, location: string) {
     setLoading(true);
     setError("");
-    setNotice("");
     setShowSaved(false);
     try {
       const res = await fetch("/api/search", {
@@ -89,17 +87,6 @@ export default function Home() {
     if (!ok) loadSaved();
   }
 
-  async function onEmail(job: Job) {
-    if (!authed) {
-      router.push("/login");
-      return;
-    }
-    setNotice("Sending…");
-    const res = await emailJob(job);
-    setNotice(res.ok ? `Emailed to ${res.to ?? "your inbox"}.` : res.error ?? "Could not send the email.");
-    setTimeout(() => setNotice(""), 4000);
-  }
-
   const displayed = showSaved ? savedJobs : jobs;
 
   return (
@@ -134,7 +121,6 @@ export default function Home() {
       </div>
 
       {error && <div className="warn">{error}</div>}
-      {notice && <div className="notice">{notice}</div>}
       {!showSaved && meta && (
         <p className="meta">
           {meta.total} job{meta.total !== 1 ? "s" : ""} in {meta.duration}s
@@ -156,13 +142,7 @@ export default function Home() {
       )}
 
       <div className="split">
-        <JobList
-          jobs={displayed}
-          onOpen={openJob}
-          savedIds={savedIds}
-          onToggleSave={toggleSave}
-          onEmail={onEmail}
-        />
+        <JobList jobs={displayed} onOpen={openJob} savedIds={savedIds} onToggleSave={toggleSave} />
         <MapView jobs={displayed} onOpen={openJob} />
       </div>
     </main>

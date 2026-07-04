@@ -5,6 +5,7 @@ import { deduplicate } from "@/lib/dedupe";
 import { rankJobs } from "@/lib/ranking";
 import { geocode } from "@/lib/geocode";
 import { geocodeBatch } from "@/lib/geocodeCache";
+import { allowRequest, clientIp } from "@/lib/rateLimit";
 import type { WorkModel } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -19,6 +20,16 @@ const SearchSchema = z.object({
 
 export async function POST(request: Request) {
   const start = Date.now();
+
+  // Protect the public endpoint from bot floods.
+  const allowed = await allowRequest(clientIp(request));
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Too many searches — please wait a moment and try again." },
+      { status: 429 },
+    );
+  }
+
   const body = await request.json().catch(() => ({}));
   const parsed = SearchSchema.safeParse(body);
   if (!parsed.success) {
