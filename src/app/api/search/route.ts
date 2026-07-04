@@ -4,6 +4,7 @@ import { fetchAllSources } from "@/lib/sources";
 import { deduplicate } from "@/lib/dedupe";
 import { rankJobs } from "@/lib/ranking";
 import { geocode } from "@/lib/geocode";
+import { geocodeBatch } from "@/lib/geocodeCache";
 import type { WorkModel } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -37,12 +38,28 @@ export async function POST(request: Request) {
   }
 
   // Attach coordinates for the map.
+  const unlocated: typeof jobs = [];
   for (const j of jobs) {
     const g = geocode(j.location);
     if (g) {
       j.lat = g.lat;
       j.lng = g.lng;
       j.city = g.city;
+    } else if (j.location) {
+      unlocated.push(j);
+    }
+  }
+
+  // Fallback: resolve cities not in the static table via cached Nominatim.
+  if (unlocated.length) {
+    const coords = await geocodeBatch(unlocated.map((j) => j.location));
+    for (const j of unlocated) {
+      const c = coords.get(j.location.trim());
+      if (c) {
+        j.lat = c.lat;
+        j.lng = c.lng;
+        j.city = c.city;
+      }
     }
   }
 
