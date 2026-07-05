@@ -112,6 +112,24 @@ ${cv}`;
 // ---- Agent: multi-step application assistant ------------------------------
 // Step 1 analyzes the fit; step 2 consumes that analysis to write the letter.
 
+// AI skills/fit analysis for the Check match button. One call, honest output.
+export function matchAnalysisPrompt(job: Parameters<typeof jobContext>[0], cvText: string): string {
+  const cv = cvText.replace(/\s+/g, " ").slice(0, 4000);
+  return `You are an honest, concise job-fit assistant. Read the job posting and the candidate's CV, then produce a truthful skills comparison in English markdown with exactly these three sections and nothing else:
+
+**You have:** up to 6 short bullets, each a concrete skill or qualification the role wants that the CV genuinely shows. If none, say "No clear overlap".
+**Missing:** up to 5 short bullets naming skills/qualifications the role asks for that the CV does NOT clearly show. Be honest; do not hide gaps. If none, say "You cover the main requirements".
+**Overall fit:** one or two sentences, plain and realistic (no hype).
+
+Infer skills intelligently from context (e.g. "built REST APIs" implies backend development) rather than only exact keywords. Do not invent CV content. Keep under 160 words total.
+
+--- JOB POSTING ---
+${jobContext(job)}
+
+--- CANDIDATE CV ---
+${cv}`;
+}
+
 export function agentAnalysisPrompt(job: Parameters<typeof jobContext>[0], cvText: string): string {
   const cv = cvText.replace(/\s+/g, " ").slice(0, 4000);
   return `You are an honest application coach. Compare the candidate's CV to the job below and produce a short, truthful fit analysis in English markdown with exactly these three sections:

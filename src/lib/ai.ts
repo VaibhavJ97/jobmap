@@ -2,39 +2,27 @@
 
 import type { Job } from "./types";
 
-export async function requestAgent(
-  job: Job,
-): Promise<{ ok: boolean; analysis?: string; coverLetter?: string; error?: string; status?: number }> {
-  try {
-    const res = await fetch("/api/agent", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ job }),
-    });
-    const data = (await res.json()) as { analysis?: string; coverLetter?: string; error?: string };
-    return {
-      ok: res.ok,
-      analysis: data.analysis,
-      coverLetter: data.coverLetter,
-      error: data.error,
-      status: res.status,
-    };
-  } catch {
-    return { ok: false, error: "Network error" };
-  }
-}
+export type SkillsResult = {
+  ok: boolean;
+  mode?: "ai" | "keyword";
+  analysis?: string;
+  required?: string[];
+  have?: string[];
+  missing?: string[];
+  note?: string;
+  error?: string;
+  status?: number;
+};
 
-export async function requestSkills(
-  job: Job,
-): Promise<{ ok: boolean; required?: string[]; have?: string[]; missing?: string[]; error?: string }> {
+export async function requestSkills(job: Job): Promise<SkillsResult> {
   try {
     const res = await fetch("/api/skills", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ job }),
     });
-    const data = (await res.json()) as { required?: string[]; have?: string[]; missing?: string[]; error?: string };
-    return { ok: res.ok, required: data.required, have: data.have, missing: data.missing, error: data.error };
+    const data = (await res.json()) as Omit<SkillsResult, "ok" | "status">;
+    return { ok: res.ok, status: res.status, ...data };
   } catch {
     return { ok: false, error: "Network error" };
   }
