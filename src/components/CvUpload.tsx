@@ -28,7 +28,7 @@ export default function CvUpload() {
     const res = await uploadCvFile(file);
     setBusy(false);
     if (res.ok) {
-      setMsg("CV saved. Tailored bullets are now personalized to it.");
+      setMsg("CV saved. Check match and Match my CV now use it.");
       refresh();
     } else {
       setMsg(res.error ?? "Upload failed.");
@@ -46,7 +46,7 @@ export default function CvUpload() {
     const res = await uploadCvText(pasteText);
     setBusy(false);
     if (res.ok) {
-      setMsg("CV saved. Tailored bullets are now personalized to it.");
+      setMsg("CV saved. Check match and Match my CV now use it.");
       setShowPaste(false);
       setPasteText("");
       refresh();
@@ -76,7 +76,7 @@ export default function CvUpload() {
       {hasCv ? (
         <p className="cv-preview">Saved: “{preview}…”</p>
       ) : (
-        <p className="cv-sub">Upload your CV (PDF or Word) to make “Tailored bullets” draft from your real experience. Private to your account.</p>
+        <p className="cv-sub">Upload your CV (PDF or Word) so Check match and Match my CV can compare it to each job. Private to your account.</p>
       )}
 
       <div className="cv-actions">

@@ -66,7 +66,7 @@ export async function POST(request: Request) {
   // Rate-limit the expensive path (embedding new jobs).
   const allowed = await allowAi(userId);
   if (!allowed) {
-    return NextResponse.json({ error: "Match limit reached (5/hour). Try again later." }, { status: 429 });
+    return NextResponse.json({ error: "Match limit reached (20/hour). Try again later." }, { status: 429 });
   }
 
   // Job embeddings are cached in a table keyed by job id, so each job is only

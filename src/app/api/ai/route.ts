@@ -70,7 +70,7 @@ export async function POST(request: Request) {
   // Only cache misses cost quota - rate-limit those per user.
   const allowed = await allowAi(userId);
   if (!allowed) {
-    return NextResponse.json({ error: "AI limit reached (5/hour). Please try again later." }, { status: 429 });
+    return NextResponse.json({ error: "AI limit reached (20/hour). Please try again later." }, { status: 429 });
   }
 
   try {

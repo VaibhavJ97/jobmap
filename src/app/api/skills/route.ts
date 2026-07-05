@@ -101,7 +101,7 @@ export async function POST(request: Request) {
   const allowed = await allowAi(userId);
   if (!allowed) {
     return NextResponse.json(
-      keywordAnalysis(title, description, cvText, "AI limit reached (5/hour); showing a quick keyword check."),
+      keywordAnalysis(title, description, cvText, "AI limit reached (20/hour); showing a quick keyword check."),
     );
   }
 
