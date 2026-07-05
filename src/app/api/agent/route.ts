@@ -78,6 +78,7 @@ export async function POST(request: Request) {
       (job as { source?: string }).source ?? "",
       (job as { url?: string }).url ?? "",
       job.description ?? "",
+      (job as { refId?: string }).refId ?? "",
     );
     const fullJob = { ...job, description };
     // Step 1: analyze fit (requirements / strengths / gaps).

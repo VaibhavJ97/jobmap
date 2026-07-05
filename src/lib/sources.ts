@@ -236,12 +236,18 @@ export async function fetchArbeitsagenturDescription(refnr: string): Promise<str
   }
 }
 
-// Given a job's source/url/existing text, return a usable description,
+// Given a job's source/url/refId/existing text, return a usable description,
 // lazily fetching it for Arbeitsagentur (which ships empty at search time).
-export async function resolveDescription(source: string, url: string, existing: string): Promise<string> {
+export async function resolveDescription(
+  source: string,
+  url: string,
+  existing: string,
+  refId?: string,
+): Promise<string> {
   if (existing && existing.trim()) return existing;
   if (source === "ARBEITSAGENTUR") {
-    return await fetchArbeitsagenturDescription(arbeitsagenturRefnr(url));
+    const ref = refId && refId.trim() ? refId : arbeitsagenturRefnr(url);
+    return await fetchArbeitsagenturDescription(ref);
   }
   return existing ?? "";
 }
@@ -281,6 +287,7 @@ async function fetchArbeitsagentur(keyword: string, location: string): Promise<J
       datePosted: j.aktuelleVeroeffentlichungsdatum ?? null,
       description: "",
       alsoOn: [],
+      refId: j.refnr ?? "",
     });
   });
 }

@@ -15,6 +15,7 @@ const Schema = z.object({
       description: z.string().optional().default(""),
       source: z.string().optional().default(""),
       url: z.string().optional().default(""),
+      refId: z.string().optional().default(""),
     })
     .passthrough(),
 });
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
   }
 
   // Pull the real description on demand (Arbeitsagentur ships empty at search).
-  const description = await resolveDescription(job.source ?? "", job.url ?? "", job.description ?? "");
+  const description = await resolveDescription(job.source ?? "", job.url ?? "", job.description ?? "", job.refId ?? "");
 
   // Pure keyword comparison, no AI: what the role names, what your CV shows.
   const jobText = `${job.title ?? ""} ${description.replace(/<[^>]+>/g, " ")}`;

@@ -93,7 +93,7 @@ a { color: inherit; text-decoration: none; }
 .view-tab.active { color: #fff; background: var(--accent); border-color: var(--accent); }
 
 /* Save button on cards */
-.card-actions { margin-top: 0.6rem; }
+.card-actions { margin-top: 0.6rem; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
 .save-btn {
   font-size: 0.78rem; font-weight: 600; color: var(--accent);
   background: transparent; border: 1px solid var(--accent); border-radius: 999px;

@@ -20,6 +20,7 @@ export interface Job {
   city?: string;
   region?: "DE" | "DACH" | "EU" | "OTHER";
   lang?: "de" | "en";
+  refId?: string;
 }
 
 export interface SearchPrefs {
