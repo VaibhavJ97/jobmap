@@ -196,23 +196,35 @@ export default function Home() {
       : baseList;
 
   return (
+    <>
     <main className="wrap">
-      <div className="site-head">
-        <h1 className="site-title">
-          Job<span>Map</span>
-        </h1>
-        <div className="head-right">
-          {authed ? (
-            <>
-              <span className="head-email">{session?.user?.email}</span>
-              <button className="link-btn" onClick={() => signOut({ callbackUrl: "/" })}>Sign out</button>
-            </>
-          ) : (
-            <button className="link-btn" onClick={() => setShowAuth(true)}>Sign in</button>
-          )}
+      <div className="intro">
+        <div className="intro-top">
+          <div className="sec-eyebrow">&sect; European tech job search</div>
+          <div className="head-right">
+            {authed ? (
+              <>
+                <span className="head-email">{session?.user?.email}</span>
+                <button className="link-btn" onClick={() => signOut({ callbackUrl: "/" })}>Sign out</button>
+              </>
+            ) : (
+              <button className="link-btn" onClick={() => setShowAuth(true)}>Sign in</button>
+            )}
+          </div>
         </div>
+        <h2>
+          Every European tech job, <em>on one map</em>.
+        </h2>
+        <span className="tech-tag">
+          &rarr; Built with Next.js &middot; TypeScript &middot; Postgres &middot; Gemini &middot;{" "}
+          <a href="https://github.com/VaibhavJ97/jobmap" target="_blank" rel="noopener noreferrer">source on GitHub</a>
+        </span>
+        <p>
+          Search many free job sources at once, ranked by relevance and plotted across Europe.
+          Filter by language, region, skills and source, then compare any role to your CV with a
+          Gemini-powered skills check. One search, one filterable view, no tab-hopping between boards.
+        </p>
       </div>
-      <p className="site-sub">European tech jobs from multiple sources, ranked by relevance and plotted on a map.</p>
 
       <SearchForm onSearch={runSearch} loading={loading} />
 
@@ -282,5 +294,102 @@ export default function Home() {
 
       {showAuth && !authed && <AuthModal onClose={() => setShowAuth(false)} />}
     </main>
+
+    <div className="explainer-wrap">
+      <section className="explainer-section">
+        <div className="sec-eyebrow">&sect; About this project</div>
+        <h2>
+          What is <em>JobMap</em>?
+        </h2>
+        <p className="lead">
+          JobMap searches European tech jobs across many free sources at once - public APIs like
+          Arbeitsagentur, Arbeitnow, Remotive, Jobicy, Remote OK and We Work Remotely, plus company
+          career boards on Greenhouse, Lever and Ashby - then deduplicates them by title, company and
+          location, ranks them by relevance, and plots them on an interactive map. Instead of opening
+          a dozen job boards in separate tabs, you get one search and one filterable view.
+        </p>
+      </section>
+
+      <section className="explainer-section">
+        <div className="sec-eyebrow">&sect; How it works</div>
+        <h2>
+          From one search to the <em>right shortlist</em>.
+        </h2>
+        <p className="lead">Four steps from a keyword to an application, all in a single view.</p>
+        <div className="how-grid">
+          <div className="how-step">
+            <div className="step-num">&rarr; 01 / SEARCH</div>
+            <h4>Search once</h4>
+            <p>Type a role and location. JobMap queries many job sources in parallel in a single request, so results arrive together.</p>
+          </div>
+          <div className="how-step">
+            <div className="step-num">&rarr; 02 / FILTER</div>
+            <h4>Filter live</h4>
+            <p>Narrow by language, region, skills and source. The counts update as you compose filters, so you always see what matches.</p>
+          </div>
+          <div className="how-step">
+            <div className="step-num">&rarr; 03 / CHECK MATCH</div>
+            <h4>Check the fit</h4>
+            <p>Upload your CV once. Any job can be compared to it for a skills match, powered by Google Gemini with a keyword fallback.</p>
+          </div>
+          <div className="how-step">
+            <div className="step-num">&rarr; 04 / APPLY</div>
+            <h4>Apply or save</h4>
+            <p>Open the original posting in one click, or save it to your shortlist to revisit after signing in.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="explainer-section">
+        <div className="sec-eyebrow">&sect; Tech stack</div>
+        <h2>
+          Built on <em>free, modern</em> tools.
+        </h2>
+        <p className="lead">Parallel API fan-out + serverless compute + AI matching, all running on free tiers.</p>
+        <div className="tech-grid">
+          <div className="tech-block">
+            <span className="label">Sources</span>
+            <p>Free, keyless job APIs (Arbeitsagentur, Arbeitnow, Remotive, Jobicy, Remote OK, We Work Remotely, The Muse) plus public ATS boards on Greenhouse, Lever, Ashby, Workable, Recruitee and SmartRecruiters.</p>
+          </div>
+          <div className="tech-block">
+            <span className="label">Frontend</span>
+            <p>Next.js App Router with TypeScript and React. Leaflet map with CARTO tiles and marker clustering, plus a live filterable results list.</p>
+          </div>
+          <div className="tech-block">
+            <span className="label">Backend &amp; AI</span>
+            <p>Node.js route handlers on Vercel. Neon Postgres with pgvector for CV embeddings, Google Gemini for the skills check, Upstash Redis for rate limiting.</p>
+          </div>
+          <div className="tech-block">
+            <span className="label">Auth &amp; storage</span>
+            <p>Auth.js email sign-in. Saved jobs and CV embeddings are stored per account in Postgres, so your shortlist follows you back.</p>
+          </div>
+          <div className="tech-block">
+            <span className="label">Hosting</span>
+            <p>Vercel free tier with GitHub auto-deploy. Total infrastructure cost: &euro;0 / month.</p>
+          </div>
+          <div className="tech-block">
+            <span className="label">Development</span>
+            <p>AI-pair-programming with <strong>Anthropic Claude</strong>, ChatGPT, and GitHub Copilot. Architecture, decisions and review by me.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="explainer-section">
+        <div className="sec-eyebrow">&sect; How this was built</div>
+        <h2>
+          Built with <em>AI as a pair-programmer</em>.
+        </h2>
+        <p className="lead">
+          <strong>Anthropic Claude</strong> was my primary pair-programmer for the multi-source fan-out,
+          the relevance ranking, the location-aware dedupe, the pgvector CV matching, and the Leaflet
+          map. <strong>ChatGPT</strong> helped iterate on which job sources were actually free and safe
+          to call from a server. <strong>GitHub Copilot</strong> handled inline suggestions. I designed
+          the product (one map, honest sources, on-demand AI), chose the architecture, decided what to
+          leave out (no scraping of Indeed or LinkedIn), reviewed every line, and own the deployed
+          system. AI accelerated the writing; the decisions stayed mine.
+        </p>
+      </section>
+    </div>
+    </>
   );
 }

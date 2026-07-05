@@ -4,10 +4,10 @@ import { useState } from "react";
 
 const LINKS = [
   { href: "https://vaibhavj97.vercel.app", label: "Home" },
-  { href: "https://vaibhavj97-thesis.vercel.app", label: "Master Thesis" },
+  { href: "https://vaibhavj97-jobmap.vercel.app", label: "JobMap", active: true },
   { href: "https://vaibhavj97-geochat.vercel.app", label: "GeoChat" },
   { href: "https://vaibhavj97-bhe.vercel.app", label: "BHE Recommender" },
-  { href: "https://vaibhavj97-jobmap.vercel.app", label: "JobMap", active: true },
+  { href: "https://vaibhavj97-thesis.vercel.app", label: "Master Thesis" },
 ];
 
 export default function Nav() {

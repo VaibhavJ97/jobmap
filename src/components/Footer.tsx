@@ -15,10 +15,10 @@ export default function Footer() {
           <h4>Navigate</h4>
           <ul>
             <li><a href="https://vaibhavj97.vercel.app">Home</a></li>
-            <li><a href="https://vaibhavj97-thesis.vercel.app">Master Thesis</a></li>
+            <li><a href="https://vaibhavj97-jobmap.vercel.app">JobMap</a></li>
             <li><a href="https://vaibhavj97-geochat.vercel.app">GeoChat</a></li>
             <li><a href="https://vaibhavj97-bhe.vercel.app">BHE Recommender</a></li>
-            <li><a href="https://vaibhavj97-jobmap.vercel.app">JobMap</a></li>
+            <li><a href="https://vaibhavj97-thesis.vercel.app">Master Thesis</a></li>
           </ul>
         </div>
         <div>
