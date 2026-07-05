@@ -11,7 +11,7 @@ export default function JobDetail() {
 
   useEffect(() => {
     try {
-      const raw = sessionStorage.getItem("jobmap:jobs");
+      const raw = localStorage.getItem("jobmap:jobs");
       if (raw) {
         const map = JSON.parse(raw) as Record<string, Job>;
         setJob(map[params.id] ?? null);

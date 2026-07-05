@@ -1,6 +1,7 @@
 "use client";
 
 import type { Job } from "@/lib/types";
+import { SKILL_GROUPS } from "@/lib/skills";
 
 export type Filters = {
   lang: "all" | "en" | "de";
@@ -9,82 +10,7 @@ export type Filters = {
   sources: Set<string>;
 };
 
-// Skills grouped by field. Matching is case-insensitive substring on
-// title + description, so multi-word terms like "google earth engine" work.
-export const SKILL_GROUPS: { label: string; skills: string[] }[] = [
-  {
-    label: "GIS / Geospatial",
-    skills: [
-      "gis",
-      "qgis",
-      "arcgis",
-      "google earth engine",
-      "postgis",
-      "geospatial",
-      "remote sensing",
-      "gdal",
-      "geopandas",
-      "leaflet",
-      "mapbox",
-      "cartography",
-      "lidar",
-    ],
-  },
-  {
-    label: "Software Development",
-    skills: [
-      "javascript",
-      "typescript",
-      "python",
-      "java",
-      "c++",
-      "go",
-      "rust",
-      "react",
-      "node",
-      "html",
-      "css",
-      "php",
-      "docker",
-      "kubernetes",
-      "git",
-    ],
-  },
-  {
-    label: "Data Analysis",
-    skills: [
-      "sql",
-      "excel",
-      "power bi",
-      "tableau",
-      "pandas",
-      "numpy",
-      "r",
-      "statistics",
-      "matplotlib",
-      "looker",
-      "jupyter",
-    ],
-  },
-  {
-    label: "Data Engineering",
-    skills: [
-      "spark",
-      "hadoop",
-      "airflow",
-      "kafka",
-      "etl",
-      "snowflake",
-      "databricks",
-      "bigquery",
-      "aws",
-      "azure",
-      "gcp",
-      "dbt",
-      "postgres",
-    ],
-  },
-];
+
 
 function toggle(set: Set<string>, value: string): Set<string> {
   const next = new Set(set);

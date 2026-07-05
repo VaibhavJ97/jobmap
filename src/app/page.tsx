@@ -73,7 +73,9 @@ export default function Home() {
       setWarnings(data.warnings ?? []);
       const map: Record<string, Job> = {};
       for (const j of data.results) map[j.id] = j;
-      sessionStorage.setItem("jobmap:jobs", JSON.stringify(map));
+      // localStorage (not sessionStorage) so the detail page opened in a NEW
+      // tab can read it; sessionStorage is isolated per tab.
+      localStorage.setItem("jobmap:jobs", JSON.stringify(map));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong");
       setJobs([]);
@@ -84,7 +86,8 @@ export default function Home() {
   }
 
   function openJob(job: Job) {
-    router.push(`/jobs/${job.id}`);
+    // New tab: the search tab (with its results + filters) is left untouched.
+    window.open(`/jobs/${job.id}`, "_blank", "noopener,noreferrer");
   }
 
   async function toggleSave(job: Job) {
