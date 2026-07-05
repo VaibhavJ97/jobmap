@@ -103,20 +103,30 @@ export default function Home() {
         body: JSON.stringify({ ...lastQuery, page: nextPage }),
       });
       const data = (await res.json()) as SearchResponse & { error?: string; hasMore?: boolean };
-      if (!res.ok) throw new Error(data.error ?? "Could not load more");
-      // Append only genuinely new jobs (dedupe by id against what we have).
+      if (!res.ok) {
+        // Ran out of pages or a transient issue: stop offering "load more"
+        // rather than showing a raw validation message.
+        setHasMore(false);
+        return;
+      }
+      let addedCount = 0;
       setJobs((prev) => {
         const seen = new Set(prev.map((j) => j.id));
-        const merged = [...prev, ...data.results.filter((j) => !seen.has(j.id))];
+        const fresh = data.results.filter((j) => !seen.has(j.id));
+        addedCount = fresh.length;
+        const merged = [...prev, ...fresh];
         const map: Record<string, Job> = {};
         for (const j of merged) map[j.id] = j;
         localStorage.setItem("jobmap:jobs", JSON.stringify(map));
+        // Keep the "X jobs" counter in sync with what is actually loaded.
+        setMeta((m) => (m ? { ...m, total: merged.length } : m));
         return merged;
       });
       setPage(nextPage);
-      setHasMore(Boolean(data.hasMore));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not load more");
+      // If this page added nothing new, there is nothing more worth fetching.
+      setHasMore(addedCount > 0 && Boolean(data.hasMore));
+    } catch {
+      setHasMore(false);
     } finally {
       setLoadingMore(false);
     }
@@ -231,25 +241,26 @@ export default function Home() {
       )}
 
       <div className="split">
-        <JobList
-          jobs={displayed}
-          onOpen={openJob}
-          savedIds={savedIds}
-          onToggleSave={toggleSave}
-          authed={authed}
-          onLoginRequired={() => setShowAuth(true)}
-          matchScores={matchActive ? matchScores : undefined}
-        />
+        <div className="list-col">
+          <JobList
+            jobs={displayed}
+            onOpen={openJob}
+            savedIds={savedIds}
+            onToggleSave={toggleSave}
+            authed={authed}
+            onLoginRequired={() => setShowAuth(true)}
+            matchScores={matchActive ? matchScores : undefined}
+          />
+          {!showSaved && jobs.length > 0 && hasMore && (
+            <div className="load-more-row">
+              <button className="load-more-btn" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? "Loading more..." : "Load more results"}
+              </button>
+            </div>
+          )}
+        </div>
         <MapView jobs={displayed} onOpen={openJob} />
       </div>
-
-      {!showSaved && jobs.length > 0 && hasMore && (
-        <div className="load-more-row">
-          <button className="load-more-btn" onClick={loadMore} disabled={loadingMore}>
-            {loadingMore ? "Loading more..." : "Load more results"}
-          </button>
-        </div>
-      )}
 
       {showAuth && !authed && <AuthModal onClose={() => setShowAuth(false)} />}
     </main>

@@ -16,7 +16,7 @@ const SearchSchema = z.object({
   location: z.string().max(80).optional().default(""),
   workModels: z.array(z.enum(["remote", "hybrid", "onsite"])).optional().default(["remote", "hybrid", "onsite"]),
   countries: z.array(z.string()).optional().default([]),
-  page: z.number().int().min(0).max(10).optional().default(0),
+  page: z.number().int().min(0).optional().default(0),
 });
 
 export async function POST(request: Request) {
