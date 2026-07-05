@@ -108,3 +108,41 @@ ${jobContext(job)}
 --- CANDIDATE CV ---
 ${cv}`;
 }
+
+// ---- Agent: multi-step application assistant ------------------------------
+// Step 1 analyzes the fit; step 2 consumes that analysis to write the letter.
+
+export function agentAnalysisPrompt(job: Parameters<typeof jobContext>[0], cvText: string): string {
+  const cv = cvText.replace(/\s+/g, " ").slice(0, 4000);
+  return `You are an honest application coach. Compare the candidate's CV to the job below and produce a short, truthful fit analysis in English markdown with exactly these three sections:
+
+**Key requirements:** up to 5 short bullets of what this role actually needs.
+**Your matching strengths:** up to 5 bullets, each citing something genuinely present in the CV.
+**Gaps to address:** up to 4 bullets naming what the role wants that the CV does NOT clearly show. Be honest; do not pretend gaps away.
+
+Do not invent CV content. Keep under 170 words total.
+
+--- JOB POSTING ---
+${jobContext(job)}
+
+--- CANDIDATE CV ---
+${cv}`;
+}
+
+export function agentCoverLetterPrompt(
+  job: Parameters<typeof jobContext>[0],
+  cvText: string,
+  analysis: string,
+): string {
+  const cv = cvText.replace(/\s+/g, " ").slice(0, 3000);
+  return `You are writing a tailored cover letter for the candidate applying to the role below. Use the FIT ANALYSIS to decide what to emphasize (lead with the matching strengths; do not dwell on gaps). Draw only on real experience from the CV — invent no employers, numbers, or skills. Write 3 short paragraphs, professional and warm, under 220 words. Return only the letter body as markdown (no placeholders like [Your Name]).
+
+--- JOB POSTING ---
+${jobContext(job)}
+
+--- FIT ANALYSIS ---
+${analysis}
+
+--- CANDIDATE CV ---
+${cv}`;
+}

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Job } from "@/lib/types";
-import { requestAi } from "@/lib/ai";
+import { requestAi, requestAgent } from "@/lib/ai";
 import type { MatchScore } from "@/lib/match";
 
 const MATCH_LABEL: Record<string, string> = { strong: "Strong", good: "Good", weak: "Weak" };
@@ -48,6 +48,42 @@ export default function JobCard({
   const [aiContent, setAiContent] = useState("");
   const [aiError, setAiError] = useState("");
   const [aiPersonalized, setAiPersonalized] = useState(false);
+
+  const [agentLoading, setAgentLoading] = useState(false);
+  const [agentAnalysis, setAgentAnalysis] = useState("");
+  const [agentLetter, setAgentLetter] = useState("");
+  const [agentError, setAgentError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  async function runAgent() {
+    if (!authed) {
+      onLoginRequired();
+      return;
+    }
+    setAgentAnalysis("");
+    setAgentLetter("");
+    setAgentError("");
+    setCopied(false);
+    setAgentLoading(true);
+    const res = await requestAgent(job);
+    setAgentLoading(false);
+    if (res.ok) {
+      setAgentAnalysis(res.analysis ?? "");
+      setAgentLetter(res.coverLetter ?? "");
+    } else {
+      setAgentError(res.error ?? "Could not draft an application. Try again.");
+    }
+  }
+
+  async function copyLetter() {
+    try {
+      await navigator.clipboard.writeText(agentLetter);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable */
+    }
+  }
 
   async function runAi(kind: "summary" | "bullets") {
     if (!authed) {
@@ -99,6 +135,9 @@ export default function JobCard({
         <button className="ai-btn" onClick={() => runAi("bullets")} disabled={aiLoading}>
           &#10024; Tailored bullets
         </button>
+        <button className="ai-btn agent-btn" onClick={runAgent} disabled={agentLoading}>
+          &#9819; Draft application
+        </button>
       </div>
 
       {(aiLoading || aiContent || aiError) && (
@@ -110,6 +149,33 @@ export default function JobCard({
           {aiLoading && <div className="ai-loading">Thinking…</div>}
           {aiError && <div className="warn" style={{ margin: 0 }}>{aiError}</div>}
           {aiContent && <div className="ai-content">{renderMarkdown(aiContent)}</div>}
+        </div>
+      )}
+
+      {(agentLoading || agentAnalysis || agentLetter || agentError) && (
+        <div className="ai-panel agent-panel" onClick={(e) => e.stopPropagation()}>
+          <div className="ai-panel-head">
+            &#9819; Application assistant <span className="ai-personal"> · grounded in your CV</span>
+          </div>
+          {agentLoading && <div className="ai-loading">Analyzing the role, comparing your CV, drafting…</div>}
+          {agentError && <div className="warn" style={{ margin: 0 }}>{agentError}</div>}
+          {agentAnalysis && (
+            <>
+              <div className="agent-section-label">Fit analysis</div>
+              <div className="ai-content">{renderMarkdown(agentAnalysis)}</div>
+            </>
+          )}
+          {agentLetter && (
+            <>
+              <div className="agent-section-label">
+                Draft cover letter
+                <button className="copy-btn" onClick={copyLetter}>
+                  {copied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <div className="ai-content">{renderMarkdown(agentLetter)}</div>
+            </>
+          )}
         </div>
       )}
     </div>
