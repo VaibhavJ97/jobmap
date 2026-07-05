@@ -357,19 +357,23 @@ export default function Home() {
           </div>
           <div className="tech-block">
             <span className="label">Backend &amp; AI</span>
-            <p>Node.js route handlers on Vercel. Neon Postgres with pgvector for CV embeddings, Google Gemini for the skills check, Upstash Redis for rate limiting.</p>
+            <p>Node.js route handlers on Vercel. Neon Postgres with pgvector for CV embeddings, Google Gemini for the skills check with a keyword fallback, cached responses to save quota, and Upstash Redis for rate limiting.</p>
           </div>
           <div className="tech-block">
             <span className="label">Auth &amp; storage</span>
             <p>Auth.js email sign-in. Saved jobs and CV embeddings are stored per account in Postgres, so your shortlist follows you back.</p>
           </div>
           <div className="tech-block">
+            <span className="label">Testing &amp; CI</span>
+            <p>Vitest unit tests cover ranking, dedupe, language and region classification, and the skills logic. GitHub Actions runs type-checks, tests and the build on every push.</p>
+          </div>
+          <div className="tech-block">
             <span className="label">Hosting</span>
-            <p>Vercel free tier with GitHub auto-deploy. Total infrastructure cost: &euro;0 / month.</p>
+            <p>Vercel free tier with GitHub auto-deploy, plus Vercel Analytics and Speed Insights. Total infrastructure cost: &euro;0 / month.</p>
           </div>
           <div className="tech-block">
             <span className="label">Development</span>
-            <p>AI-pair-programming with <strong>Anthropic Claude</strong>, ChatGPT, and GitHub Copilot. Architecture, decisions and review by me.</p>
+            <p>AI-pair-programming with <strong>Anthropic Claude</strong> and GitHub Copilot. Architecture, decisions and review by me.</p>
           </div>
         </div>
       </section>
@@ -382,11 +386,11 @@ export default function Home() {
         <p className="lead">
           <strong>Anthropic Claude</strong> was my primary pair-programmer for the multi-source fan-out,
           the relevance ranking, the location-aware dedupe, the pgvector CV matching, and the Leaflet
-          map. <strong>ChatGPT</strong> helped iterate on which job sources were actually free and safe
-          to call from a server. <strong>GitHub Copilot</strong> handled inline suggestions. I designed
-          the product (one map, honest sources, on-demand AI), chose the architecture, decided what to
-          leave out (no scraping of Indeed or LinkedIn), reviewed every line, and own the deployed
-          system. AI accelerated the writing; the decisions stayed mine.
+          map. <strong>GitHub Copilot</strong> handled inline suggestions. I researched which job sources
+          were actually free and safe to call from a server, designed the product (one map, honest
+          sources, on-demand AI), chose the architecture, decided what to leave out (no scraping of
+          Indeed or LinkedIn), reviewed every line, and own the deployed system. AI accelerated the
+          writing; the decisions stayed mine.
         </p>
       </section>
     </div>
