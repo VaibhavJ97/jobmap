@@ -30,6 +30,7 @@ export default function Home() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [moreNote, setMoreNote] = useState("");
 
   const [matchScores, setMatchScores] = useState<Record<string, MatchScore>>({});
   const [matchActive, setMatchActive] = useState(false);
@@ -64,6 +65,7 @@ export default function Home() {
     setMatchScores({});
     setMatchActive(false);
     setPage(0);
+    setMoreNote("");
     setLastQuery({ keywords, location });
     setFilters({ lang: "all", region: "all", skills: new Set(), sources: new Set() });
     try {
@@ -110,6 +112,7 @@ export default function Home() {
         return;
       }
       let addedCount = 0;
+      const rawCount = data.results.length;
       setJobs((prev) => {
         const seen = new Set(prev.map((j) => j.id));
         const fresh = data.results.filter((j) => !seen.has(j.id));
@@ -122,9 +125,18 @@ export default function Home() {
         setMeta((m) => (m ? { ...m, total: merged.length } : m));
         return merged;
       });
+      // Always advance the page so the next click digs deeper even if this
+      // page was mostly duplicates. Keep the button while the source still
+      // returns data (server's hasMore); only stop when it runs dry.
       setPage(nextPage);
-      // If this page added nothing new, there is nothing more worth fetching.
-      setHasMore(addedCount > 0 && Boolean(data.hasMore));
+      setHasMore(Boolean(data.hasMore));
+      setMoreNote(
+        addedCount > 0
+          ? ""
+          : rawCount > 0
+            ? "Those were already in your list - click again for more."
+            : "No more results from the deeper sources.",
+      );
     } catch {
       setHasMore(false);
     } finally {
@@ -258,6 +270,7 @@ export default function Home() {
               </button>
             </div>
           )}
+          {!showSaved && moreNote && <p className="more-note">{moreNote}</p>}
         </div>
         <MapView jobs={displayed} onOpen={openJob} />
       </div>

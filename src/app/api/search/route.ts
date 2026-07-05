@@ -44,6 +44,7 @@ export async function POST(request: Request) {
     page > 0
       ? await fetchMore(kw, location, warnings, page)
       : await fetchAllSources(kw, location, warnings);
+  const rawCount = raw.length;
 
   let jobs = deduplicate(raw);
 
@@ -89,6 +90,6 @@ export async function POST(request: Request) {
     // Hint for the client: if a paginated page came back non-empty, there may
     // be more. The feeds are exhausted on page 0, so this reflects Arbeitsagentur
     // and SmartRecruiters depth.
-    hasMore: page > 0 ? jobs.length > 0 : true,
+    hasMore: page > 0 ? rawCount > 0 && page < 15 : true,
   });
 }
