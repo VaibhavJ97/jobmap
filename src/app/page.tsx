@@ -8,6 +8,7 @@ import JobList from "@/components/JobList";
 import MapView from "@/components/MapView";
 import CvUpload from "@/components/CvUpload";
 import { fetchSaved, saveJob, removeJob } from "@/lib/tracker";
+import { matchJobs, type MatchScore } from "@/lib/match";
 import type { Job, SearchResponse } from "@/lib/types";
 
 export default function Home() {
@@ -24,6 +25,10 @@ export default function Home() {
   const [savedJobs, setSavedJobs] = useState<Job[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [showSaved, setShowSaved] = useState(false);
+
+  const [matchScores, setMatchScores] = useState<Record<string, MatchScore>>({});
+  const [matchActive, setMatchActive] = useState(false);
+  const [matching, setMatching] = useState(false);
 
   const loadSaved = useCallback(() => {
     fetchSaved().then(({ saved }) => {
@@ -44,6 +49,8 @@ export default function Home() {
     setLoading(true);
     setError("");
     setShowSaved(false);
+    setMatchScores({});
+    setMatchActive(false);
     try {
       const res = await fetch("/api/search", {
         method: "POST",
@@ -88,7 +95,28 @@ export default function Home() {
     if (!ok) loadSaved();
   }
 
-  const displayed = showSaved ? savedJobs : jobs;
+  async function runMatch() {
+    if (!authed) {
+      router.push("/login");
+      return;
+    }
+    setMatching(true);
+    setError("");
+    const res = await matchJobs(jobs);
+    setMatching(false);
+    if (res.ok && res.scores) {
+      setMatchScores(res.scores);
+      setMatchActive(true);
+    } else {
+      setError(res.error ?? "Could not match jobs.");
+    }
+  }
+
+  const baseList = showSaved ? savedJobs : jobs;
+  const displayed =
+    matchActive && !showSaved
+      ? [...baseList].sort((a, b) => (matchScores[b.id]?.pct ?? -1) - (matchScores[a.id]?.pct ?? -1))
+      : baseList;
 
   return (
     <main className="wrap">
@@ -121,6 +149,11 @@ export default function Home() {
         <button className={`view-tab ${showSaved ? "active" : ""}`} onClick={() => setShowSaved(true)}>
           Saved{savedJobs.length ? ` (${savedJobs.length})` : ""}
         </button>
+        {authed && !showSaved && jobs.length > 0 && (
+          <button className="match-btn" onClick={runMatch} disabled={matching}>
+            {matching ? "Matching…" : matchActive ? "↻ Re-match my CV" : "◎ Match my CV"}
+          </button>
+        )}
       </div>
 
       {error && <div className="warn">{error}</div>}
@@ -152,6 +185,7 @@ export default function Home() {
           onToggleSave={toggleSave}
           authed={authed}
           onLoginRequired={() => router.push("/login")}
+          matchScores={matchActive ? matchScores : undefined}
         />
         <MapView jobs={displayed} onOpen={openJob} />
       </div>

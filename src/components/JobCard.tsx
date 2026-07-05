@@ -3,8 +3,10 @@
 import { useState } from "react";
 import type { Job } from "@/lib/types";
 import { requestAi } from "@/lib/ai";
+import type { MatchScore } from "@/lib/match";
 
 const MATCH_LABEL: Record<string, string> = { strong: "Strong", good: "Good", weak: "Weak" };
+const FIT_LABEL: Record<string, string> = { strong: "Strong fit", good: "Good fit", weak: "Weak fit" };
 
 // Minimal, safe markdown rendering: escapes text, then applies **bold** and
 // turns "- " lines into list items. No raw HTML from the model is injected.
@@ -31,6 +33,7 @@ export default function JobCard({
   onToggleSave,
   authed,
   onLoginRequired,
+  match,
 }: {
   job: Job;
   onOpen: (job: Job) => void;
@@ -38,6 +41,7 @@ export default function JobCard({
   onToggleSave: (job: Job) => void;
   authed: boolean;
   onLoginRequired: () => void;
+  match?: MatchScore;
 }) {
   const [aiKind, setAiKind] = useState<"summary" | "bullets" | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -68,6 +72,11 @@ export default function JobCard({
       <div className="card-top">
         <div className="card-title">{job.title}</div>
         <div className="badges">
+          {match && (
+            <span className={`fit fit-${match.band}`} title="Semantic match to your CV">
+              {FIT_LABEL[match.band] ?? "Fit"} · {match.pct}%
+            </span>
+          )}
           {typeof job.relevance === "number" && (
             <span className={`match match-${job.match}`} title={`Relevance ${job.relevance}/100`}>
               {MATCH_LABEL[job.match ?? "weak"]}
