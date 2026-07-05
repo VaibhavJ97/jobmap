@@ -216,7 +216,7 @@ export default function Home() {
           Every European tech job, <em>on one map</em>.
         </h2>
         <span className="tech-tag">
-          &rarr; Built with Next.js &middot; TypeScript &middot; Postgres &middot; Gemini &middot;{" "}
+          &rarr; Next.js &middot; TypeScript &middot; React &middot; Postgres &middot; pgvector &middot; Gemini &middot; RAG &middot; LLM &middot;{" "}
           <a href="https://github.com/VaibhavJ97/jobmap" target="_blank" rel="noopener noreferrer">source on GitHub</a>
         </span>
         <p>
