@@ -18,6 +18,8 @@ export interface Job {
   lat?: number;
   lng?: number;
   city?: string;
+  region?: "DE" | "DACH" | "EU" | "OTHER";
+  lang?: "de" | "en";
 }
 
 export interface SearchPrefs {
