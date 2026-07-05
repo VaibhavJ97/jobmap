@@ -7,6 +7,7 @@ import SearchForm from "@/components/SearchForm";
 import JobList from "@/components/JobList";
 import MapView from "@/components/MapView";
 import CvUpload from "@/components/CvUpload";
+import FilterPanel, { applyFilters, type Filters } from "@/components/Filters";
 import { fetchSaved, saveJob, removeJob } from "@/lib/tracker";
 import { matchJobs, type MatchScore } from "@/lib/match";
 import type { Job, SearchResponse } from "@/lib/types";
@@ -30,6 +31,13 @@ export default function Home() {
   const [matchActive, setMatchActive] = useState(false);
   const [matching, setMatching] = useState(false);
 
+  const [filters, setFilters] = useState<Filters>({
+    lang: "all",
+    region: "all",
+    skills: new Set(),
+    sources: new Set(),
+  });
+
   const loadSaved = useCallback(() => {
     fetchSaved().then(({ saved }) => {
       setSavedJobs(saved);
@@ -51,6 +59,7 @@ export default function Home() {
     setShowSaved(false);
     setMatchScores({});
     setMatchActive(false);
+    setFilters({ lang: "all", region: "all", skills: new Set(), sources: new Set() });
     try {
       const res = await fetch("/api/search", {
         method: "POST",
@@ -112,7 +121,7 @@ export default function Home() {
     }
   }
 
-  const baseList = showSaved ? savedJobs : jobs;
+  const baseList = showSaved ? savedJobs : applyFilters(jobs, filters);
   const displayed =
     matchActive && !showSaved
       ? [...baseList].sort((a, b) => (matchScores[b.id]?.pct ?? -1) - (matchScores[a.id]?.pct ?? -1))
@@ -175,6 +184,10 @@ export default function Home() {
       )}
       {showSaved && authed && savedJobs.length === 0 && (
         <p className="meta">No saved jobs yet. Click &quot;Save&quot; on any job to keep it here.</p>
+      )}
+
+      {!showSaved && jobs.length > 0 && (
+        <FilterPanel jobs={jobs} filters={filters} onChange={setFilters} shownCount={displayed.length} />
       )}
 
       <div className="split">
