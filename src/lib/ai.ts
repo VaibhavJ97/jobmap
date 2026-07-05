@@ -5,10 +5,9 @@ import type { Job } from "./types";
 export type SkillsResult = {
   ok: boolean;
   mode?: "ai" | "keyword";
-  analysis?: string;
-  required?: string[];
   have?: string[];
   missing?: string[];
+  fit?: string;
   note?: string;
   error?: string;
   status?: number;

@@ -7,19 +7,6 @@ import type { MatchScore } from "@/lib/match";
 
 const FIT_LABEL: Record<string, string> = { strong: "Strong fit", good: "Good fit", weak: "Weak fit" };
 
-// Minimal, safe markdown: **bold** and "- " bullets only.
-function renderMarkdown(md: string): React.ReactNode {
-  const lines = md.split("\n").filter((l) => l.trim() !== "");
-  return lines.map((line, i) => {
-    const isBullet = /^\s*[-*]\s+/.test(line);
-    const text = isBullet ? line.replace(/^\s*[-*]\s+/, "") : line;
-    const parts = text.split(/(\*\*[^*]+\*\*)/g).map((p, j) =>
-      p.startsWith("**") && p.endsWith("**") ? <strong key={j}>{p.slice(2, -2)}</strong> : <span key={j}>{p}</span>,
-    );
-    return isBullet ? <li key={i}>{parts}</li> : <p key={i} style={{ margin: "0.35rem 0" }}>{parts}</p>;
-  });
-}
-
 export default function JobCard({
   job,
   saved,
@@ -93,38 +80,37 @@ export default function JobCard({
           {checkLoading && <div className="ai-loading">Analyzing against your CV...</div>}
           {checkError && <div className="warn" style={{ margin: 0 }}>{checkError}</div>}
 
-          {result?.mode === "ai" && result.analysis && (
-            <div className="ai-content">{renderMarkdown(result.analysis)}</div>
-          )}
-
-          {result?.mode === "keyword" && (
+          {result && !checkError && (
             <div className="gap">
               {result.note && <p className="cv-msg" style={{ marginTop: 0 }}>{result.note}</p>}
-              {(result.required?.length ?? 0) === 0 ? (
-                <p style={{ margin: 0 }}>No specific tech skills detected in this posting.</p>
-              ) : (
-                <>
-                  <div className="gap-row">
-                    <span className="gap-label">You have</span>
-                    <span className="gap-chips">
-                      {result.have?.length ? (
-                        result.have.map((s) => <span key={s} className="gap-chip gap-have">{s}</span>)
-                      ) : (
-                        <span className="gap-none">none of the detected skills</span>
-                      )}
-                    </span>
-                  </div>
-                  <div className="gap-row">
-                    <span className="gap-label">Missing</span>
-                    <span className="gap-chips">
-                      {result.missing?.length ? (
-                        result.missing.map((s) => <span key={s} className="gap-chip gap-miss">{s}</span>)
-                      ) : (
-                        <span className="gap-none">nothing, you cover them all</span>
-                      )}
-                    </span>
-                  </div>
-                </>
+
+              <div className="gap-row">
+                <span className="gap-label">You have</span>
+                <span className="gap-chips">
+                  {result.have?.length ? (
+                    result.have.map((s) => <span key={s} className="gap-chip gap-have">{s}</span>)
+                  ) : (
+                    <span className="gap-none">no clear overlap with your CV</span>
+                  )}
+                </span>
+              </div>
+
+              <div className="gap-row">
+                <span className="gap-label">Missing</span>
+                <span className="gap-chips">
+                  {result.missing?.length ? (
+                    result.missing.map((s) => <span key={s} className="gap-chip gap-miss">{s}</span>)
+                  ) : (
+                    <span className="gap-none">nothing major, you cover the main requirements</span>
+                  )}
+                </span>
+              </div>
+
+              {result.fit && (
+                <div className="gap-row">
+                  <span className="gap-label">Fit</span>
+                  <span className="gap-fit">{result.fit}</span>
+                </div>
               )}
             </div>
           )}
