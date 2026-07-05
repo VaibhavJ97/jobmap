@@ -111,13 +111,17 @@ export default function Home() {
         setHasMore(false);
         return;
       }
-      let addedCount = 0;
       const rawCount = data.results.length;
+      // Compute what is genuinely new against the current list up front, so the
+      // caption below reflects reality. Doing this inside setJobs would read a
+      // stale addedCount (the updater runs asynchronously).
+      const seen = new Set(jobs.map((j) => j.id));
+      const fresh = data.results.filter((j) => !seen.has(j.id));
+      const addedCount = fresh.length;
       setJobs((prev) => {
-        const seen = new Set(prev.map((j) => j.id));
-        const fresh = data.results.filter((j) => !seen.has(j.id));
-        addedCount = fresh.length;
-        const merged = [...prev, ...fresh];
+        const prevSeen = new Set(prev.map((j) => j.id));
+        const freshNow = data.results.filter((j) => !prevSeen.has(j.id));
+        const merged = [...prev, ...freshNow];
         const map: Record<string, Job> = {};
         for (const j of merged) map[j.id] = j;
         localStorage.setItem("jobmap:jobs", JSON.stringify(map));
@@ -132,7 +136,7 @@ export default function Home() {
       setHasMore(Boolean(data.hasMore));
       setMoreNote(
         addedCount > 0
-          ? ""
+          ? `Added ${addedCount} more.`
           : rawCount > 0
             ? "Those were already in your list - click again for more."
             : "No more results from the deeper sources.",
