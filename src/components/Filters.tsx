@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { Job } from "@/lib/types";
 import { SKILL_GROUPS } from "@/lib/skills";
 
@@ -30,6 +31,21 @@ export default function FilterPanel({
   onChange: (f: Filters) => void;
   shownCount: number;
 }) {
+  // Master panel fold (expanded by default) and per-skill-category folds
+  // (collapsed by default so the panel is compact; click a header to expand).
+  const [open, setOpen] = useState(true);
+  const [openGroups, setOpenGroups] = useState<Set<string>>(
+    () => new Set(SKILL_GROUPS.map((g) => g.label)),
+  );
+  function toggleGroupOpen(label: string) {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(label)) next.delete(label);
+      else next.add(label);
+      return next;
+    });
+  }
+
   const sourceCounts = new Map<string, { label: string; n: number }>();
   for (const j of jobs) {
     const cur = sourceCounts.get(j.source) ?? { label: j.sourceLabel, n: 0 };
@@ -61,7 +77,15 @@ export default function FilterPanel({
   return (
     <div className="filters">
       <div className="filters-head">
-        <span className="filters-title">Filters</span>
+        <button
+          className="filters-toggle"
+          onClick={() => setOpen((v) => !v)}
+          aria-expanded={open}
+          title={open ? "Collapse filters" : "Expand filters"}
+        >
+          <span className={`fold-arrow ${open ? "open" : ""}`}>&#9656;</span>
+          <span className="filters-title">Filters</span>
+        </button>
         <span className="filters-count">
           {shownCount} of {jobs.length} shown
         </span>
@@ -75,6 +99,8 @@ export default function FilterPanel({
         )}
       </div>
 
+      {open && (
+      <>
       <div className="filter-row">
         <span className="filter-label">Language</span>
         <div className="seg">
@@ -108,28 +134,45 @@ export default function FilterPanel({
       <div className="filter-row filter-row-skills">
         <span className="filter-label">Skills</span>
         <div className="skill-groups">
-          {SKILL_GROUPS.map((g) => (
-            <div className="skill-group" key={g.label}>
-              <button
-                className={`skill-group-head ${groupAllOn(g.skills) ? "on" : ""}`}
-                onClick={() => toggleGroup(g.skills)}
-                title="Select or clear all in this group"
-              >
-                {g.label}
-              </button>
-              <div className="chips">
-                {g.skills.map((s) => (
+          {SKILL_GROUPS.map((g) => {
+            const expanded = openGroups.has(g.label);
+            return (
+              <div className="skill-group" key={g.label}>
+                <div className="skill-group-bar">
                   <button
-                    key={s}
-                    className={`chip ${filters.skills.has(s) ? "on" : ""}`}
-                    onClick={() => onChange({ ...filters, skills: toggle(filters.skills, s) })}
+                    className="skill-group-fold"
+                    onClick={() => toggleGroupOpen(g.label)}
+                    aria-expanded={expanded}
                   >
-                    {s}
+                    <span className={`fold-arrow ${expanded ? "open" : ""}`}>&#9656;</span>
+                    {g.label}
                   </button>
-                ))}
+                  {expanded && (
+                    <button
+                      className={`skill-selectall ${groupAllOn(g.skills) ? "on" : ""}`}
+                      onClick={() => toggleGroup(g.skills)}
+                      title="Select or clear all in this group"
+                    >
+                      {groupAllOn(g.skills) ? "clear" : "all"}
+                    </button>
+                  )}
+                </div>
+                {expanded && (
+                  <div className="chips">
+                    {g.skills.map((s) => (
+                      <button
+                        key={s}
+                        className={`chip ${filters.skills.has(s) ? "on" : ""}`}
+                        onClick={() => onChange({ ...filters, skills: toggle(filters.skills, s) })}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -148,6 +191,8 @@ export default function FilterPanel({
             ))}
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

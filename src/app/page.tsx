@@ -161,9 +161,9 @@ export default function Home() {
         <button className={`view-tab ${showSaved ? "active" : ""}`} onClick={() => setShowSaved(true)}>
           Saved{savedJobs.length ? ` (${savedJobs.length})` : ""}
         </button>
-        {authed && !showSaved && jobs.length > 0 && (
+        {!showSaved && jobs.length > 0 && (
           <button className="match-btn" onClick={runMatch} disabled={matching}>
-            {matching ? "Matching…" : matchActive ? "↻ Re-match my CV" : "◎ Match my CV"}
+            {matching ? "Matching..." : matchActive ? "\u21bb Re-match my CV" : "\u25ce Match my CV"}
           </button>
         )}
       </div>
@@ -182,7 +182,7 @@ export default function Home() {
         ))}
       {showSaved && !authed && (
         <p className="meta">
-          <button className="link-btn" onClick={() => setShowAuth(true)}>Sign in</button> to save and track jobs.
+          <button className="link-btn" onClick={() => setShowAuth(true)}>Sign in</button> to save and check match with CV.
         </p>
       )}
       {showSaved && authed && savedJobs.length === 0 && (

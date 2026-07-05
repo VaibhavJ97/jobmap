@@ -51,7 +51,7 @@ export default function LoginPage() {
           Job<span>Map</span>
         </h1>
         <p className="site-sub" style={{ marginBottom: "1.25rem" }}>
-          {mode === "signin" ? "Sign in to save and track jobs." : "Create an account to save and track jobs."}
+          {mode === "signin" ? "Sign in to save and check match with CV." : "Create an account to save and check match with CV."}
         </p>
 
         <form onSubmit={submit} className="auth-form">
