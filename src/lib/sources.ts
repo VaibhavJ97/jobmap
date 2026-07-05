@@ -1,5 +1,30 @@
 import type { Job } from "./types";
-import companiesData from "./companies.json";
+
+// Greenhouse company slugs with EU tech presence. Inlined (rather than a
+// separate JSON file) so there is nothing extra to import or upload. Add a
+// company by finding the {slug} in its Greenhouse careers URL and listing it.
+const GREENHOUSE_SLUGS = [
+  "spotify",
+  "wise",
+  "personio",
+  "getyourguide",
+  "contentful",
+  "hellofresh",
+  "deepl",
+  "celonis",
+  "traderepublic",
+  "n26",
+  "bolt",
+  "pipedrive",
+  "klarna",
+  "deliveryhero",
+  "babbel",
+  "trivago",
+  "freenow",
+  "sennder",
+  "forto",
+  "gitlab",
+];
 
 function sha(input: string): string {
   let h = 0;
@@ -281,7 +306,7 @@ async function fetchGreenhouseCompany(slug: string, keyword: string): Promise<Jo
 }
 
 async function fetchGreenhouse(keyword: string, warnings: string[]): Promise<Job[]> {
-  const slugs = (companiesData as { greenhouse?: string[] }).greenhouse ?? [];
+  const slugs = GREENHOUSE_SLUGS;
   // Each company is independent; a dead slug just yields [] and is dropped.
   const batches = await Promise.all(
     slugs.map((slug) =>
