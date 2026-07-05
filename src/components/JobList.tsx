@@ -8,11 +8,15 @@ export default function JobList({
   onOpen,
   savedIds,
   onToggleSave,
+  authed,
+  onLoginRequired,
 }: {
   jobs: Job[];
   onOpen: (job: Job) => void;
   savedIds: Set<string>;
   onToggleSave: (job: Job) => void;
+  authed: boolean;
+  onLoginRequired: () => void;
 }) {
   if (jobs.length === 0)
     return <div className="empty">No jobs yet &mdash; try a search like &quot;backend developer&quot; or &quot;data analyst&quot;.</div>;
@@ -25,6 +29,8 @@ export default function JobList({
           onOpen={onOpen}
           saved={savedIds.has(j.id)}
           onToggleSave={onToggleSave}
+          authed={authed}
+          onLoginRequired={onLoginRequired}
         />
       ))}
     </div>

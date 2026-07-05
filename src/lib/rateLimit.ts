@@ -43,3 +43,34 @@ export async function allowRequest(ip: string): Promise<boolean> {
     return true;
   }
 }
+
+// Separate, stricter limiter for AI calls (which cost quota): 5 per hour per user.
+let _aiLimiter: Ratelimit | null | undefined;
+
+function getAiLimiter(): Ratelimit | null {
+  if (_aiLimiter !== undefined) return _aiLimiter;
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) {
+    _aiLimiter = null;
+    return null;
+  }
+  _aiLimiter = new Ratelimit({
+    redis: new Redis({ url, token }),
+    limiter: Ratelimit.slidingWindow(5, "1 h"),
+    prefix: "jobmap:ai",
+    analytics: false,
+  });
+  return _aiLimiter;
+}
+
+export async function allowAi(userId: string): Promise<boolean> {
+  const limiter = getAiLimiter();
+  if (!limiter) return true;
+  try {
+    const { success } = await limiter.limit(userId);
+    return success;
+  } catch {
+    return true;
+  }
+}

@@ -142,7 +142,14 @@ export default function Home() {
       )}
 
       <div className="split">
-        <JobList jobs={displayed} onOpen={openJob} savedIds={savedIds} onToggleSave={toggleSave} />
+        <JobList
+          jobs={displayed}
+          onOpen={openJob}
+          savedIds={savedIds}
+          onToggleSave={toggleSave}
+          authed={authed}
+          onLoginRequired={() => router.push("/login")}
+        />
         <MapView jobs={displayed} onOpen={openJob} />
       </div>
     </main>

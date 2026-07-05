@@ -51,6 +51,13 @@ export async function ensureSchema(): Promise<boolean> {
         city  TEXT NOT NULL
       )
     `;
+    await sql`
+      CREATE TABLE IF NOT EXISTS ai_cache (
+        cache_key  TEXT PRIMARY KEY,
+        content    TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `;
     _initialized = true;
     return true;
   } catch {
