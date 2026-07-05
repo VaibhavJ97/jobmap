@@ -210,7 +210,6 @@ export default function Home() {
           ) : (
             <button className="link-btn" onClick={() => setShowAuth(true)}>Sign in</button>
           )}
-          <a className="back-link" href="https://vaibhavj97.vercel.app/">&larr; Portfolio</a>
         </div>
       </div>
       <p className="site-sub">European tech jobs from multiple sources, ranked by relevance and plotted on a map.</p>
