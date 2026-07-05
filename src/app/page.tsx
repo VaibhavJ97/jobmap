@@ -1,19 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import SearchForm from "@/components/SearchForm";
 import JobList from "@/components/JobList";
 import MapView from "@/components/MapView";
 import CvUpload from "@/components/CvUpload";
+import AuthModal from "@/components/AuthModal";
 import FilterPanel, { applyFilters, type Filters } from "@/components/Filters";
 import { fetchSaved, saveJob, removeJob } from "@/lib/tracker";
 import { matchJobs, type MatchScore } from "@/lib/match";
 import type { Job, SearchResponse } from "@/lib/types";
 
 export default function Home() {
-  const router = useRouter();
   const { data: session, status } = useSession();
   const authed = status === "authenticated";
 
@@ -26,6 +25,7 @@ export default function Home() {
   const [savedJobs, setSavedJobs] = useState<Job[]>([]);
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [showSaved, setShowSaved] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
 
   const [matchScores, setMatchScores] = useState<Record<string, MatchScore>>({});
   const [matchActive, setMatchActive] = useState(false);
@@ -92,7 +92,7 @@ export default function Home() {
 
   async function toggleSave(job: Job) {
     if (!authed) {
-      router.push("/login");
+      setShowAuth(true);
       return;
     }
     const isSaved = savedIds.has(job.id);
@@ -109,7 +109,7 @@ export default function Home() {
 
   async function runMatch() {
     if (!authed) {
-      router.push("/login");
+      setShowAuth(true);
       return;
     }
     setMatching(true);
@@ -143,7 +143,7 @@ export default function Home() {
               <button className="link-btn" onClick={() => signOut({ callbackUrl: "/" })}>Sign out</button>
             </>
           ) : (
-            <a className="link-btn" href="/login">Sign in</a>
+            <button className="link-btn" onClick={() => setShowAuth(true)}>Sign in</button>
           )}
           <a className="back-link" href="https://vaibhavj97.vercel.app/">&larr; Portfolio</a>
         </div>
@@ -182,7 +182,7 @@ export default function Home() {
         ))}
       {showSaved && !authed && (
         <p className="meta">
-          <a className="link-btn" href="/login">Sign in</a> to save and track jobs.
+          <button className="link-btn" onClick={() => setShowAuth(true)}>Sign in</button> to save and track jobs.
         </p>
       )}
       {showSaved && authed && savedJobs.length === 0 && (
@@ -200,11 +200,13 @@ export default function Home() {
           savedIds={savedIds}
           onToggleSave={toggleSave}
           authed={authed}
-          onLoginRequired={() => router.push("/login")}
+          onLoginRequired={() => setShowAuth(true)}
           matchScores={matchActive ? matchScores : undefined}
         />
         <MapView jobs={displayed} onOpen={openJob} />
       </div>
+
+      {showAuth && !authed && <AuthModal onClose={() => setShowAuth(false)} />}
     </main>
   );
 }

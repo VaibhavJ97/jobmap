@@ -49,13 +49,14 @@ a { color: inherit; text-decoration: none; }
 .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start; }
 @media (max-width: 880px) { .split { grid-template-columns: 1fr; } }
 
-.list { display: flex; flex-direction: column; gap: 0.75rem; max-height: 78vh; overflow-y: auto; padding-right: 4px; }
+.list { display: flex; flex-direction: column; gap: 0.75rem; max-height: 78vh; overflow-y: auto; padding: 3px 4px 3px 2px; }
 
 .card {
   background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 0.9rem 1rem; cursor: pointer; transition: border-color 0.12s, transform 0.12s;
+  position: relative;
 }
-.card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.card:hover { border-color: var(--accent); transform: translateY(-1px); z-index: 2; }
 .card-top { display: flex; justify-content: space-between; gap: 0.5rem; align-items: flex-start; }
 .card-title { font-weight: 600; font-size: 1rem; }
 .card-company { color: var(--muted); font-size: 0.9rem; margin-top: 0.15rem; }
@@ -355,3 +356,39 @@ a { color: inherit; text-decoration: none; }
 .gap-miss { background: #f6e0e0; color: #a3402f; }
 .gap-none { font-size: 0.8rem; color: #888; font-style: italic; padding-top: 3px; }
 .gap-fit { font-size: 0.85rem; color: #333; line-height: 1.45; padding-top: 2px; }
+
+/* --- Sign-in modal (blurred in-page overlay) ----------------------------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(30, 40, 34, 0.28);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  background: var(--card, #fff);
+  border: 1px solid var(--border, #e2e5e1);
+  border-radius: var(--radius, 12px);
+  padding: 1.75rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+.modal-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.9rem;
+  border: none;
+  background: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--muted, #888);
+  cursor: pointer;
+}
+.modal-close:hover { color: var(--accent, #2d6a4f); }
