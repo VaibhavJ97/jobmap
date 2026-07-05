@@ -3,27 +3,67 @@ import type { Job } from "./types";
 // Greenhouse company slugs with EU tech presence. Inlined (rather than a
 // separate JSON file) so there is nothing extra to import or upload. Add a
 // company by finding the {slug} in its Greenhouse careers URL and listing it.
-const GREENHOUSE_SLUGS = [
-  "spotify",
-  "wise",
-  "personio",
-  "getyourguide",
-  "contentful",
-  "hellofresh",
-  "deepl",
-  "celonis",
-  "traderepublic",
-  "n26",
-  "bolt",
-  "pipedrive",
-  "klarna",
-  "deliveryhero",
-  "babbel",
-  "trivago",
-  "freenow",
-  "sennder",
-  "forto",
-  "gitlab",
+// One combined company roster. Each entry names which ATS hosts it, so adding
+// a company is a one-line change and adding a whole ATS is a new "ats" value.
+// NOTE: every company here is queried on EVERY search (no cap, by request).
+// If searches start creeping toward Vercel's ~10s limit (watch the "X jobs in
+// Ys" readout), trim this list. Grow or shrink freely; nothing else changes.
+type AtsKind = "greenhouse" | "lever" | "ashby" | "workable" | "recruitee" | "smartrecruiters";
+type RosterEntry = { ats: AtsKind; slug: string };
+
+const COMPANY_ROSTER: RosterEntry[] = [
+  // Greenhouse
+  { ats: "greenhouse", slug: "spotify" },
+  { ats: "greenhouse", slug: "wise" },
+  { ats: "greenhouse", slug: "personio" },
+  { ats: "greenhouse", slug: "getyourguide" },
+  { ats: "greenhouse", slug: "contentful" },
+  { ats: "greenhouse", slug: "hellofresh" },
+  { ats: "greenhouse", slug: "deepl" },
+  { ats: "greenhouse", slug: "celonis" },
+  { ats: "greenhouse", slug: "traderepublic" },
+  { ats: "greenhouse", slug: "n26" },
+  { ats: "greenhouse", slug: "bolt" },
+  { ats: "greenhouse", slug: "pipedrive" },
+  { ats: "greenhouse", slug: "klarna" },
+  { ats: "greenhouse", slug: "deliveryhero" },
+  { ats: "greenhouse", slug: "babbel" },
+  { ats: "greenhouse", slug: "trivago" },
+  { ats: "greenhouse", slug: "freenow" },
+  { ats: "greenhouse", slug: "sennder" },
+  { ats: "greenhouse", slug: "forto" },
+  { ats: "greenhouse", slug: "gitlab" },
+  // Lever
+  { ats: "lever", slug: "personio" },
+  { ats: "lever", slug: "gympass" },
+  { ats: "lever", slug: "taxfix" },
+  { ats: "lever", slug: "mollie" },
+  { ats: "lever", slug: "tier" },
+  { ats: "lever", slug: "sumup" },
+  { ats: "lever", slug: "wefox" },
+  // Ashby
+  { ats: "ashby", slug: "ramp" },
+  { ats: "ashby", slug: "linear" },
+  { ats: "ashby", slug: "runway" },
+  { ats: "ashby", slug: "posthog" },
+  { ats: "ashby", slug: "supabase" },
+  { ats: "ashby", slug: "trunk" },
+  // Workable
+  { ats: "workable", slug: "kaiko" },
+  { ats: "workable", slug: "boostcom" },
+  { ats: "workable", slug: "hometogo" },
+  // Recruitee (common among European SMB/mid-market)
+  { ats: "recruitee", slug: "recruitee" },
+  { ats: "recruitee", slug: "gigsalad" },
+  { ats: "recruitee", slug: "usercentrics" },
+  { ats: "recruitee", slug: "choco" },
+  { ats: "recruitee", slug: "grover" },
+  // SmartRecruiters (enterprise; many EU offices)
+  { ats: "smartrecruiters", slug: "Bosch" },
+  { ats: "smartrecruiters", slug: "Visa" },
+  { ats: "smartrecruiters", slug: "Ubisoft" },
+  { ats: "smartrecruiters", slug: "IKEA" },
+  { ats: "smartrecruiters", slug: "Biontech" },
 ];
 
 function sha(input: string): string {
@@ -327,17 +367,219 @@ async function fetchGreenhouseCompany(slug: string, keyword: string): Promise<Jo
     .filter((job) => job.region === "DE" || job.region === "DACH" || job.region === "EU"); // EU-located only
 }
 
-async function fetchGreenhouse(keyword: string, warnings: string[]): Promise<Job[]> {
-  const slugs = GREENHOUSE_SLUGS;
-  // Each company is independent; a dead slug just yields [] and is dropped.
+// --- Recruitee: public offers API, per company subdomain, no key ------------
+async function fetchRecruiteeCompany(slug: string, keyword: string): Promise<Job[]> {
+  const res = await fetchT(`https://${slug}.recruitee.com/api/offers/`, { headers: UA }, 5000);
+  if (!res.ok) throw new Error(`status ${res.status}`);
+  const data = (await res.json()) as { offers?: any[] };
+  const kw = keyword.toLowerCase();
+  return (data.offers ?? [])
+    .filter((j) => `${j.title ?? ""} ${stripHtml(j.description ?? "")}`.toLowerCase().includes(kw))
+    .map((j) => {
+      const loc = [j.city, j.country].filter(Boolean).join(", ");
+      return enrich({
+        id: makeId(j.title ?? "", slug),
+        title: j.title ?? "",
+        company: j.company_name ?? slug.charAt(0).toUpperCase() + slug.slice(1),
+        location: loc,
+        url: j.careers_url ?? j.url ?? "",
+        source: "RECRUITEE",
+        sourceLabel: "Recruitee",
+        isRemote: /remote/i.test(loc) || /remote/i.test(j.remote ? "remote" : ""),
+        datePosted: j.published_at ?? null,
+        description: stripHtml(j.description ?? "").slice(0, 1200),
+        alsoOn: [],
+      });
+    })
+    .filter((job) => job.region === "DE" || job.region === "DACH" || job.region === "EU");
+}
+
+// --- SmartRecruiters: public Posting API, per company, no key ---------------
+async function fetchSmartRecruitersCompany(slug: string, keyword: string): Promise<Job[]> {
+  const url = `https://api.smartrecruiters.com/v1/companies/${slug}/postings?q=${encodeURIComponent(keyword)}&limit=40`;
+  const res = await fetchT(url, { headers: UA }, 5000);
+  if (!res.ok) throw new Error(`status ${res.status}`);
+  const data = (await res.json()) as { content?: any[] };
+  return (data.content ?? [])
+    .map((j) => {
+      const loc = [j.location?.city, j.location?.region, j.location?.country]
+        .filter(Boolean)
+        .join(", ");
+      return enrich({
+        id: makeId(j.name ?? "", slug),
+        title: j.name ?? "",
+        company: j.company?.name ?? slug,
+        location: loc,
+        url: j.ref ?? `https://jobs.smartrecruiters.com/${slug}`,
+        source: "SMARTRECRUITERS",
+        sourceLabel: "SmartRecruiters",
+        isRemote: Boolean(j.location?.remote),
+        datePosted: j.releasedDate ?? null,
+        description: "",
+        alsoOn: [],
+      });
+    })
+    .filter((job) => job.region === "DE" || job.region === "DACH" || job.region === "EU");
+}
+
+// Roster dispatcher: fires EVERY company in COMPANY_ROSTER in parallel (no cap).
+// A dead slug or failed fetch just yields [] and is dropped, so one bad company
+// never breaks a search.
+async function fetchRoster(keyword: string, warnings: string[]): Promise<Job[]> {
+  const runners: Record<AtsKind, (slug: string, kw: string) => Promise<Job[]>> = {
+    greenhouse: fetchGreenhouseCompany,
+    lever: fetchLeverCompany,
+    ashby: fetchAshbyCompany,
+    workable: fetchWorkableCompany,
+    recruitee: fetchRecruiteeCompany,
+    smartrecruiters: fetchSmartRecruitersCompany,
+  };
   const batches = await Promise.all(
-    slugs.map((slug) =>
-      fetchGreenhouseCompany(slug, keyword).catch(() => [] as Job[]),
+    COMPANY_ROSTER.map((entry) =>
+      runners[entry.ats](entry.slug, keyword).catch(() => [] as Job[]),
     ),
   );
   const jobs = batches.flat();
-  if (jobs.length === 0) warnings.push("Greenhouse: no EU matches this search");
+  if (jobs.length === 0) warnings.push("Company boards: no EU matches this search");
   return jobs;
+}
+
+// --- Lever: public postings API, per company, no key ------------------------
+async function fetchLeverCompany(slug: string, keyword: string): Promise<Job[]> {
+  const res = await fetchT(`https://api.lever.co/v0/postings/${slug}?mode=json`, { headers: UA }, 5000);
+  if (!res.ok) throw new Error(`status ${res.status}`);
+  const arr = (await res.json()) as any[];
+  const kw = keyword.toLowerCase();
+  return (Array.isArray(arr) ? arr : [])
+    .filter((j) => `${j.text ?? ""} ${stripHtml(j.descriptionPlain ?? j.description ?? "")}`.toLowerCase().includes(kw))
+    .map((j) => {
+      const loc = j.categories?.location ?? "";
+      return enrich({
+        id: makeId(j.text ?? "", slug),
+        title: j.text ?? "",
+        company: slug.charAt(0).toUpperCase() + slug.slice(1),
+        location: loc,
+        url: j.hostedUrl ?? j.applyUrl ?? "",
+        source: "LEVER",
+        sourceLabel: "Lever",
+        isRemote: /remote/i.test(loc) || /remote/i.test(j.categories?.commitment ?? ""),
+        datePosted: j.createdAt ? new Date(j.createdAt).toISOString() : null,
+        description: stripHtml(j.descriptionPlain ?? j.description ?? "").slice(0, 1200),
+        alsoOn: [],
+      });
+    })
+    .filter((job) => job.region === "DE" || job.region === "DACH" || job.region === "EU");
+}
+
+// --- Ashby: public job-board posting API, per company, no key ---------------
+async function fetchAshbyCompany(slug: string, keyword: string): Promise<Job[]> {
+  const res = await fetchT(`https://api.ashbyhq.com/posting-api/job-board/${slug}`, { headers: UA }, 5000);
+  if (!res.ok) throw new Error(`status ${res.status}`);
+  const data = (await res.json()) as { jobs?: any[] };
+  const kw = keyword.toLowerCase();
+  return (data.jobs ?? [])
+    .filter((j) => `${j.title ?? ""} ${stripHtml(j.descriptionPlain ?? "")}`.toLowerCase().includes(kw))
+    .map((j) => {
+      const country = j.address?.postalAddress?.addressCountry ?? "";
+      const loc = j.location ?? [country].filter(Boolean).join(", ");
+      return enrich({
+        id: makeId(j.title ?? "", slug),
+        title: j.title ?? "",
+        company: slug.charAt(0).toUpperCase() + slug.slice(1),
+        location: loc,
+        url: j.jobUrl ?? j.applyUrl ?? "",
+        source: "ASHBY",
+        sourceLabel: "Ashby",
+        isRemote: Boolean(j.isRemote) || /remote/i.test(j.workplaceType ?? ""),
+        datePosted: j.publishedAt ?? null,
+        description: stripHtml(j.descriptionPlain ?? "").slice(0, 1200),
+        alsoOn: [],
+      });
+    })
+    .filter((job) => job.region === "DE" || job.region === "DACH" || job.region === "EU");
+}
+
+// --- Workable: public widget account API, per company, no key ---------------
+async function fetchWorkableCompany(slug: string, keyword: string): Promise<Job[]> {
+  const res = await fetchT(`https://apply.workable.com/api/v1/widget/accounts/${slug}`, { headers: UA }, 5000);
+  if (!res.ok) throw new Error(`status ${res.status}`);
+  const data = (await res.json()) as { jobs?: any[]; name?: string };
+  const kw = keyword.toLowerCase();
+  const company = data.name ?? slug;
+  return (data.jobs ?? [])
+    .filter((j) => `${j.title ?? ""} ${stripHtml(j.description ?? "")}`.toLowerCase().includes(kw))
+    .map((j) => {
+      const loc = [j.city, j.country].filter(Boolean).join(", ");
+      return enrich({
+        id: makeId(j.title ?? "", slug),
+        title: j.title ?? "",
+        company,
+        location: loc,
+        url: j.url ?? j.application_url ?? "",
+        source: "WORKABLE",
+        sourceLabel: "Workable",
+        isRemote: Boolean(j.remote) || /remote/i.test(loc),
+        datePosted: j.published_on ?? null,
+        description: stripHtml(j.description ?? "").slice(0, 1200),
+        alsoOn: [],
+      });
+    })
+    .filter((job) => job.region === "DE" || job.region === "DACH" || job.region === "EU");
+}
+
+// --- The Muse: public API, no key -------------------------------------------
+async function fetchTheMuse(keyword: string): Promise<Job[]> {
+  const url = `https://www.themuse.com/api/public/jobs?page=1`;
+  const res = await fetchT(url, { headers: UA });
+  if (!res.ok) throw new Error(`status ${res.status}`);
+  const data = (await res.json()) as { results?: any[] };
+  const kw = keyword.toLowerCase();
+  return (data.results ?? [])
+    .filter((j) => `${j.name ?? ""} ${stripHtml(j.contents ?? "")}`.toLowerCase().includes(kw))
+    .map((j) => {
+      const loc = (j.locations ?? []).map((l: any) => l.name).join(", ");
+      return enrich({
+        id: makeId(j.name ?? "", j.company?.name ?? ""),
+        title: j.name ?? "",
+        company: j.company?.name ?? "Unknown",
+        location: loc,
+        url: j.refs?.landing_page ?? "",
+        source: "THEMUSE",
+        sourceLabel: "The Muse",
+        isRemote: /remote|flexible/i.test(loc),
+        datePosted: j.publication_date ?? null,
+        description: stripHtml(j.contents ?? "").slice(0, 1200),
+        alsoOn: [],
+      });
+    });
+}
+
+// --- Adzuna: aggregator, needs a free app id + key (skipped if unset) -------
+async function fetchAdzuna(keyword: string): Promise<Job[]> {
+  const id = process.env.ADZUNA_APP_ID;
+  const key = process.env.ADZUNA_APP_KEY;
+  if (!id || !key) return []; // no key configured -> silently skip
+  const url =
+    `https://api.adzuna.com/v1/api/jobs/de/search/1?app_id=${id}&app_key=${key}` +
+    `&results_per_page=40&what=${encodeURIComponent(keyword)}&content-type=application/json`;
+  const res = await fetchT(url, { headers: UA });
+  if (!res.ok) throw new Error(`status ${res.status}`);
+  const data = (await res.json()) as { results?: any[] };
+  return (data.results ?? []).map((j) =>
+    enrich({
+      id: makeId(j.title ?? "", j.company?.display_name ?? ""),
+      title: (j.title ?? "").replace(/<[^>]+>/g, ""),
+      company: j.company?.display_name ?? "Unknown",
+      location: j.location?.display_name ?? "",
+      url: j.redirect_url ?? "",
+      source: "ADZUNA",
+      sourceLabel: "Adzuna",
+      isRemote: /remote/i.test(j.location?.display_name ?? ""),
+      datePosted: j.created ?? null,
+      description: stripHtml(j.description ?? "").slice(0, 1200),
+      alsoOn: [],
+    }),
+  );
 }
 
 export async function fetchAllSources(keyword: string, location: string, warnings: string[]): Promise<Job[]> {
@@ -348,7 +590,9 @@ export async function fetchAllSources(keyword: string, location: string, warning
     safe("Jobicy", () => fetchJobicy(keyword), warnings),
     safe("Remote OK", () => fetchRemoteOk(keyword), warnings),
     safe("We Work Remotely", () => fetchWWR(keyword), warnings),
-    safe("Greenhouse", () => fetchGreenhouse(keyword, warnings), warnings),
+    safe("Company boards", () => fetchRoster(keyword, warnings), warnings),
+    safe("The Muse", () => fetchTheMuse(keyword), warnings),
+    safe("Adzuna", () => fetchAdzuna(keyword), warnings),
   ]);
   return batches.flat();
 }
