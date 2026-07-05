@@ -4,7 +4,7 @@ import type { Job } from "@/lib/types";
 
 export type Filters = {
   lang: "all" | "en" | "de";
-  region: "all" | "DE" | "DACH" | "EU" | "europe";
+  region: "all" | "DE" | "DACH" | "EU";
   skills: Set<string>;
   sources: Set<string>;
 };
@@ -167,13 +167,13 @@ export default function FilterPanel({
       <div className="filter-row">
         <span className="filter-label">Region</span>
         <div className="seg">
-          {(["all", "DE", "DACH", "EU", "europe"] as const).map((v) => (
+          {(["all", "DE", "DACH", "EU"] as const).map((v) => (
             <button
               key={v}
               className={`seg-btn ${filters.region === v ? "on" : ""}`}
               onClick={() => onChange({ ...filters, region: v })}
             >
-              {v === "all" ? "All" : v === "DE" ? "Germany" : v === "DACH" ? "DACH" : v === "EU" ? "EU" : "Europe only"}
+              {v === "all" ? "All" : v === "DE" ? "Germany" : v === "DACH" ? "DACH" : "All Europe"}
             </button>
           ))}
         </div>
@@ -232,8 +232,7 @@ export function applyFilters(jobs: Job[], f: Filters): Job[] {
     if (f.lang !== "all" && j.lang !== f.lang) return false;
     if (f.region === "DE" && j.region !== "DE") return false;
     if (f.region === "DACH" && j.region !== "DE" && j.region !== "DACH") return false;
-    if (f.region === "EU" && j.region !== "DE" && j.region !== "DACH" && j.region !== "EU") return false;
-    if (f.region === "europe" && j.region === "OTHER") return false;
+    if (f.region === "EU" && j.region === "OTHER") return false;
     if (f.sources.size > 0 && !f.sources.has(j.source)) return false;
     if (f.skills.size > 0) {
       const hay = `${j.title} ${j.description ?? ""}`.toLowerCase();
