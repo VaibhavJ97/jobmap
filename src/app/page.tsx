@@ -149,8 +149,10 @@ export default function Home() {
   }
 
   function openJob(job: Job) {
-    // New tab: the search tab (with its results + filters) is left untouched.
-    window.open(`/jobs/${job.id}`, "_blank", "noopener,noreferrer");
+    // Open the real posting in a new tab, matching the card's Apply button.
+    // Fall back to the internal page only if a job has no source URL.
+    const target = job.url || `/jobs/${job.id}`;
+    window.open(target, "_blank", "noopener,noreferrer");
   }
 
   async function toggleSave(job: Job) {

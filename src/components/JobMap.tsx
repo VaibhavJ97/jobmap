@@ -46,7 +46,9 @@ export default function JobMap({ jobs, onOpen }: { jobs: Job[]; onOpen: (job: Jo
                       e.preventDefault();
                       onOpen(j);
                     }}
-                    href={`/jobs/${j.id}`}
+                    href={j.url || `/jobs/${j.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
                     {j.title} - {j.company}
                   </a>
