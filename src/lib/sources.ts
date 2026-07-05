@@ -64,7 +64,7 @@ const DE = ["germany", "deutschland", "berlin", "munich", "munchen", "m\u00fcnch
 const AT_CH = ["austria", "osterreich", "\u00f6sterreich", "switzerland", "schweiz", "vienna", "wien", "zurich", "z\u00fcrich", "basel", "geneva", "graz", "salzburg", "bern", "lausanne"];
 const EU = ["netherlands", "amsterdam", "france", "paris", "spain", "madrid", "barcelona", "italy", "rome", "milan", "ireland", "dublin", "portugal", "lisbon", "poland", "warsaw", "sweden", "stockholm", "denmark", "copenhagen", "finland", "helsinki", "belgium", "brussels", "czech", "prague", "romania", "bucharest", "greece", "athens", "hungary", "budapest", "norway", "oslo", "estonia", "tallinn", "europe", "eu", "emea", "united kingdom", "london", "uk"];
 
-function classifyRegion(location: string, isRemote: boolean): "DE" | "DACH" | "EU" | "OTHER" {
+export function classifyRegion(location: string, isRemote: boolean): "DE" | "DACH" | "EU" | "OTHER" {
   const s = (location || "").toLowerCase();
   if (DE.some((k) => s.includes(k))) return "DE";
   if (AT_CH.some((k) => s.includes(k))) return "DACH";
@@ -75,7 +75,7 @@ function classifyRegion(location: string, isRemote: boolean): "DE" | "DACH" | "E
 
 // Rough language guess from common German tokens; defaults to English.
 const DE_TOKENS = [" und ", " der ", " die ", " das ", " f\u00fcr ", " mit ", " wir ", " sie ", " deine", " unser", "entwickler", "mitarbeiter", "m/w/d", "w/m/d", "kenntnisse", "aufgaben", "stellenangebot"];
-function detectLang(title: string, description: string): "de" | "en" {
+export function detectLang(title: string, description: string): "de" | "en" {
   const s = ` ${(title + " " + description).toLowerCase()} `;
   return DE_TOKENS.some((t) => s.includes(t)) ? "de" : "en";
 }
