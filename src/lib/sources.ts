@@ -84,11 +84,33 @@ function stripHtml(s: string): string {
   return (s || "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 }
 
+// Decode the common HTML entities that some feeds return in plain-text fields
+// (e.g. a title arriving as "Web Developer &amp; AI Specialist").
+function decodeEntities(s: string): string {
+  if (!s) return s;
+  return s
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, n) => String.fromCharCode(parseInt(n, 16)));
+}
+
 function enrich(j: Job): Job {
+  const title = decodeEntities(j.title);
+  const company = decodeEntities(j.company);
+  const location = decodeEntities(j.location);
   return {
     ...j,
-    region: classifyRegion(j.location, j.isRemote),
-    lang: detectLang(j.title, j.description ?? ""),
+    title,
+    company,
+    location,
+    region: classifyRegion(location, j.isRemote),
+    lang: detectLang(title, j.description ?? ""),
   };
 }
 
