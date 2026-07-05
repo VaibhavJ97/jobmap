@@ -73,7 +73,8 @@ export async function POST(request: Request) {
       }
     }
     return NextResponse.json({ content, cached: false });
-  } catch {
+  } catch (e) {
+    console.error("AI generate failed:", e instanceof Error ? e.message : e);
     return NextResponse.json({ error: "The AI service is busy. Please try again shortly." }, { status: 502 });
   }
 }
