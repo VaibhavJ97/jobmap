@@ -1,16 +1,21 @@
 // Provider-agnostic LLM layer. Today it calls Gemini; swapping providers means
 // changing only this file. Returns plain text, or throws on failure.
+//
+// Model names on Gemini's free tier change over time and vary by key, so we try
+// a list of known-good models in order and use the first that responds. The
+// real upstream error is surfaced (not swallowed) to make debugging possible.
 
-const GEMINI_MODEL = "gemini-2.0-flash";
+const MODELS = [
+  "gemini-2.5-flash",
+  "gemini-2.0-flash",
+  "gemini-flash-latest",
+  "gemini-1.5-flash",
+];
 
-export async function generate(prompt: string): Promise<string> {
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error("LLM not configured");
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`;
+async function callModel(model: string, key: string, prompt: string): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
-
+  const timer = setTimeout(() => controller.abort(), 15000);
   try {
     const res = await fetch(url, {
       method: "POST",
@@ -21,14 +26,36 @@ export async function generate(prompt: string): Promise<string> {
       }),
       signal: controller.signal,
     });
-    if (!res.ok) throw new Error(`LLM status ${res.status}`);
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const msg = data?.error?.message ?? `status ${res.status}`;
+      // 404 / NOT_FOUND means this model isn't available to the key — try the next one.
+      const notFound = res.status === 404 || /not found|not supported/i.test(msg);
+      throw Object.assign(new Error(`[${model}] ${msg}`), { retryable: notFound });
+    }
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error("Empty LLM response");
+    if (!text) throw new Error(`[${model}] empty response`);
     return String(text).trim();
   } finally {
     clearTimeout(timer);
   }
+}
+
+export async function generate(prompt: string): Promise<string> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("LLM not configured: GEMINI_API_KEY missing");
+
+  let lastErr: unknown;
+  for (const model of MODELS) {
+    try {
+      return await callModel(model, key, prompt);
+    } catch (e) {
+      lastErr = e;
+      // Only move to the next model if this one was "not found"; otherwise stop.
+      if (!(e as { retryable?: boolean })?.retryable) break;
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("LLM failed");
 }
 
 // ---- Prompt builders -----------------------------------------------------
