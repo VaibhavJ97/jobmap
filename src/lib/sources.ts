@@ -252,8 +252,8 @@ export async function resolveDescription(
   return existing ?? "";
 }
 
-async function fetchArbeitsagentur(keyword: string, location: string): Promise<Job[]> {
-  const params = new URLSearchParams({ was: keyword, angebotsart: "1", size: "40", pav: "false" });
+async function fetchArbeitsagentur(keyword: string, location: string, page = 1): Promise<Job[]> {
+  const params = new URLSearchParams({ was: keyword, angebotsart: "1", size: "100", page: String(page), pav: "false" });
   if (location) params.set("wo", location);
   const url = `https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/app/jobs?${params}`;
 
@@ -445,8 +445,8 @@ async function fetchRecruiteeCompany(slug: string, keyword: string): Promise<Job
 }
 
 // --- SmartRecruiters: public Posting API, per company, no key ---------------
-async function fetchSmartRecruitersCompany(slug: string, keyword: string): Promise<Job[]> {
-  const url = `https://api.smartrecruiters.com/v1/companies/${slug}/postings?q=${encodeURIComponent(keyword)}&limit=40`;
+async function fetchSmartRecruitersCompany(slug: string, keyword: string, offset = 0): Promise<Job[]> {
+  const url = `https://api.smartrecruiters.com/v1/companies/${slug}/postings?q=${encodeURIComponent(keyword)}&limit=40&offset=${offset}`;
   const res = await fetchT(url, { headers: UA }, 5000);
   if (!res.ok) throw new Error(`status ${res.status}`);
   const data = (await res.json()) as { content?: any[] };
@@ -636,13 +636,33 @@ export async function fetchAllSources(keyword: string, location: string, warning
   const batches = await Promise.all([
     safe("Remotive", () => fetchRemotive(keyword), warnings),
     safe("Arbeitnow", () => fetchArbeitnow(keyword), warnings),
-    safe("Arbeitsagentur", () => fetchArbeitsagentur(keyword, location), warnings),
+    safe("Arbeitsagentur", () => fetchArbeitsagentur(keyword, location, 1), warnings),
     safe("Jobicy", () => fetchJobicy(keyword), warnings),
     safe("Remote OK", () => fetchRemoteOk(keyword), warnings),
     safe("We Work Remotely", () => fetchWWR(keyword), warnings),
     safe("Company boards", () => fetchRoster(keyword, warnings), warnings),
     safe("The Muse", () => fetchTheMuse(keyword), warnings),
     safe("Adzuna", () => fetchAdzuna(keyword), warnings),
+  ]);
+  return batches.flat();
+}
+
+// Load-more: only the sources that actually paginate return genuinely new
+// jobs (the feeds already gave everything on page 0). page is 1-based here.
+export async function fetchMore(
+  keyword: string,
+  location: string,
+  warnings: string[],
+  page: number,
+): Promise<Job[]> {
+  const srCompanies = COMPANY_ROSTER.filter((e) => e.ats === "smartrecruiters");
+  const batches = await Promise.all([
+    // Arbeitsagentur: next page (page 0 fetched page 1, so add 1).
+    safe("Arbeitsagentur", () => fetchArbeitsagentur(keyword, location, page + 1), warnings),
+    // SmartRecruiters: next offset across the SR roster companies.
+    ...srCompanies.map((e) =>
+      safe(`SmartRecruiters ${e.slug}`, () => fetchSmartRecruitersCompany(e.slug, keyword, page * 40), warnings),
+    ),
   ]);
   return batches.flat();
 }

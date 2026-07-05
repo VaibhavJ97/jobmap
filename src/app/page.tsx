@@ -26,6 +26,10 @@ export default function Home() {
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [showSaved, setShowSaved] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [lastQuery, setLastQuery] = useState<{ keywords: string; location: string } | null>(null);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const [matchScores, setMatchScores] = useState<Record<string, MatchScore>>({});
   const [matchActive, setMatchActive] = useState(false);
@@ -59,18 +63,21 @@ export default function Home() {
     setShowSaved(false);
     setMatchScores({});
     setMatchActive(false);
+    setPage(0);
+    setLastQuery({ keywords, location });
     setFilters({ lang: "all", region: "all", skills: new Set(), sources: new Set() });
     try {
       const res = await fetch("/api/search", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ keywords, location }),
+        body: JSON.stringify({ keywords, location, page: 0 }),
       });
-      const data = (await res.json()) as SearchResponse & { error?: string };
+      const data = (await res.json()) as SearchResponse & { error?: string; hasMore?: boolean };
       if (!res.ok) throw new Error(data.error ?? "Search failed");
       setJobs(data.results);
       setMeta({ total: data.total, duration: data.durationSeconds });
       setWarnings(data.warnings ?? []);
+      setHasMore(Boolean(data.hasMore));
       const map: Record<string, Job> = {};
       for (const j of data.results) map[j.id] = j;
       // localStorage (not sessionStorage) so the detail page opened in a NEW
@@ -82,6 +89,36 @@ export default function Home() {
       setMeta(null);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadMore() {
+    if (!lastQuery || loadingMore) return;
+    const nextPage = page + 1;
+    setLoadingMore(true);
+    try {
+      const res = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...lastQuery, page: nextPage }),
+      });
+      const data = (await res.json()) as SearchResponse & { error?: string; hasMore?: boolean };
+      if (!res.ok) throw new Error(data.error ?? "Could not load more");
+      // Append only genuinely new jobs (dedupe by id against what we have).
+      setJobs((prev) => {
+        const seen = new Set(prev.map((j) => j.id));
+        const merged = [...prev, ...data.results.filter((j) => !seen.has(j.id))];
+        const map: Record<string, Job> = {};
+        for (const j of merged) map[j.id] = j;
+        localStorage.setItem("jobmap:jobs", JSON.stringify(map));
+        return merged;
+      });
+      setPage(nextPage);
+      setHasMore(Boolean(data.hasMore));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not load more");
+    } finally {
+      setLoadingMore(false);
     }
   }
 
@@ -205,6 +242,14 @@ export default function Home() {
         />
         <MapView jobs={displayed} onOpen={openJob} />
       </div>
+
+      {!showSaved && jobs.length > 0 && hasMore && (
+        <div className="load-more-row">
+          <button className="load-more-btn" onClick={loadMore} disabled={loadingMore}>
+            {loadingMore ? "Loading more..." : "Load more results"}
+          </button>
+        </div>
+      )}
 
       {showAuth && !authed && <AuthModal onClose={() => setShowAuth(false)} />}
     </main>

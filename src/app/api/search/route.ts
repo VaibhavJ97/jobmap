@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { fetchAllSources } from "@/lib/sources";
+import { fetchAllSources, fetchMore } from "@/lib/sources";
 import { deduplicate } from "@/lib/dedupe";
 import { rankJobs } from "@/lib/ranking";
 import { geocode } from "@/lib/geocode";
@@ -16,6 +16,7 @@ const SearchSchema = z.object({
   location: z.string().max(80).optional().default(""),
   workModels: z.array(z.enum(["remote", "hybrid", "onsite"])).optional().default(["remote", "hybrid", "onsite"]),
   countries: z.array(z.string()).optional().default([]),
+  page: z.number().int().min(0).max(10).optional().default(0),
 });
 
 export async function POST(request: Request) {
@@ -35,10 +36,14 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "invalid request" }, { status: 400 });
   }
-  const { keywords, location, workModels, countries } = parsed.data;
+  const { keywords, location, workModels, countries, page } = parsed.data;
 
   const warnings: string[] = [];
-  const raw = await fetchAllSources(keywords.split(",")[0].trim(), location, warnings);
+  const kw = keywords.split(",")[0].trim();
+  const raw =
+    page > 0
+      ? await fetchMore(kw, location, warnings, page)
+      : await fetchAllSources(kw, location, warnings);
 
   let jobs = deduplicate(raw);
 
@@ -81,5 +86,9 @@ export async function POST(request: Request) {
     total: jobs.length,
     durationSeconds: Math.round((Date.now() - start) / 100) / 10,
     warnings,
+    // Hint for the client: if a paginated page came back non-empty, there may
+    // be more. The feeds are exhausted on page 0, so this reflects Arbeitsagentur
+    // and SmartRecruiters depth.
+    hasMore: page > 0 ? jobs.length > 0 : true,
   });
 }

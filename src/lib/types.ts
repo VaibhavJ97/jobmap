@@ -33,4 +33,5 @@ export interface SearchResponse {
   total: number;
   durationSeconds: number;
   warnings: string[];
+  hasMore?: boolean;
 }
