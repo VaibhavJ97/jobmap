@@ -43,6 +43,7 @@ export default function JobCard({
   const [aiLoading, setAiLoading] = useState(false);
   const [aiContent, setAiContent] = useState("");
   const [aiError, setAiError] = useState("");
+  const [aiPersonalized, setAiPersonalized] = useState(false);
 
   async function runAi(kind: "summary" | "bullets") {
     if (!authed) {
@@ -52,11 +53,14 @@ export default function JobCard({
     setAiKind(kind);
     setAiContent("");
     setAiError("");
+    setAiPersonalized(false);
     setAiLoading(true);
     const res = await requestAi(job, kind);
     setAiLoading(false);
-    if (res.ok && res.content) setAiContent(res.content);
-    else setAiError(res.error ?? "Could not generate. Try again.");
+    if (res.ok && res.content) {
+      setAiContent(res.content);
+      setAiPersonalized(Boolean(res.personalized));
+    } else setAiError(res.error ?? "Could not generate. Try again.");
   }
 
   return (
@@ -90,7 +94,10 @@ export default function JobCard({
 
       {(aiLoading || aiContent || aiError) && (
         <div className="ai-panel" onClick={(e) => e.stopPropagation()}>
-          <div className="ai-panel-head">{aiKind === "bullets" ? "Tailored application bullets" : "AI summary"}</div>
+          <div className="ai-panel-head">
+            {aiKind === "bullets" ? "Tailored application bullets" : "AI summary"}
+            {aiKind === "bullets" && aiPersonalized && <span className="ai-personal"> · from your CV</span>}
+          </div>
           {aiLoading && <div className="ai-loading">Thinking…</div>}
           {aiError && <div className="warn" style={{ margin: 0 }}>{aiError}</div>}
           {aiContent && <div className="ai-content">{renderMarkdown(aiContent)}</div>}

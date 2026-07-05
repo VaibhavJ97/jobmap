@@ -6,6 +6,7 @@ import { useSession, signOut } from "next-auth/react";
 import SearchForm from "@/components/SearchForm";
 import JobList from "@/components/JobList";
 import MapView from "@/components/MapView";
+import CvUpload from "@/components/CvUpload";
 import { fetchSaved, saveJob, removeJob } from "@/lib/tracker";
 import type { Job, SearchResponse } from "@/lib/types";
 
@@ -110,6 +111,8 @@ export default function Home() {
       <p className="site-sub">European tech jobs from multiple sources, ranked by relevance and plotted on a map.</p>
 
       <SearchForm onSearch={runSearch} loading={loading} />
+
+      {authed && <CvUpload />}
 
       <div className="view-tabs">
         <button className={`view-tab ${!showSaved ? "active" : ""}`} onClick={() => setShowSaved(false)}>

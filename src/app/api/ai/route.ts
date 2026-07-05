@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/auth";
-import { getSql, ensureSchema } from "@/lib/db";
+import { getSql, ensureSchema, ensureCvSchema } from "@/lib/db";
 import { allowAi } from "@/lib/rateLimit";
-import { generate, summaryPrompt, bulletsPrompt } from "@/lib/llm";
+import { generate, summaryPrompt, bulletsPrompt, personalBulletsPrompt } from "@/lib/llm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +22,6 @@ const Schema = z.object({
 });
 
 export async function POST(request: Request) {
-  // 1) Must be signed in.
   const session = await auth();
   const userId = (session?.user as { id?: string } | undefined)?.id;
   if (!userId) return NextResponse.json({ error: "Sign in to use AI features." }, { status: 401 });
@@ -34,33 +33,53 @@ export async function POST(request: Request) {
 
   await ensureSchema();
   const sql = getSql();
-  const cacheKey = `${kind}:${job.id}`;
 
-  // 2) Cache first — a summary of a fixed posting never changes, so this
-  //    returns instantly with zero AI usage for any repeat request.
+  // For personalized bullets, load the user's CV (if any). This changes both
+  // the prompt and the cache key (so each user's CV yields its own cached copy,
+  // invalidated when they re-upload — the key includes the CV timestamp).
+  let cvText = "";
+  let cacheKey = `${kind}:${job.id}`;
+  let personalized = false;
+  if (kind === "bullets" && sql) {
+    try {
+      await ensureCvSchema();
+      const rows = await sql`SELECT cv_text, created_at FROM user_cv WHERE user_id = ${userId}`;
+      if (rows[0]?.cv_text) {
+        cvText = rows[0].cv_text as string;
+        personalized = true;
+        const stamp = new Date(rows[0].created_at as string).getTime();
+        cacheKey = `bullets:${userId}:${stamp}:${job.id}`;
+      }
+    } catch {
+      /* no CV — fall back to generic bullets */
+    }
+  }
+
+  // Cache first — zero AI usage on repeats.
   if (sql) {
     try {
       const rows = await sql`SELECT content FROM ai_cache WHERE cache_key = ${cacheKey}`;
       if (rows[0]?.content) {
-        return NextResponse.json({ content: rows[0].content as string, cached: true });
+        return NextResponse.json({ content: rows[0].content as string, cached: true, personalized });
       }
     } catch {
       /* fall through to generate */
     }
   }
 
-  // 3) Only cache misses cost quota — rate-limit those per user.
+  // Only cache misses cost quota — rate-limit those per user.
   const allowed = await allowAi(userId);
   if (!allowed) {
-    return NextResponse.json(
-      { error: "AI limit reached (5/hour). Please try again later." },
-      { status: 429 },
-    );
+    return NextResponse.json({ error: "AI limit reached (5/hour). Please try again later." }, { status: 429 });
   }
 
-  // 4) Generate, then store for everyone next time.
   try {
-    const prompt = kind === "summary" ? summaryPrompt(job) : bulletsPrompt(job);
+    const prompt =
+      kind === "summary"
+        ? summaryPrompt(job)
+        : personalized
+          ? personalBulletsPrompt(job, cvText)
+          : bulletsPrompt(job);
     const content = await generate(prompt);
     if (sql) {
       try {
@@ -69,10 +88,10 @@ export async function POST(request: Request) {
           ON CONFLICT (cache_key) DO NOTHING
         `;
       } catch {
-        /* caching is best-effort */
+        /* best-effort */
       }
     }
-    return NextResponse.json({ content, cached: false });
+    return NextResponse.json({ content, cached: false, personalized });
   } catch (e) {
     console.error("AI generate failed:", e instanceof Error ? e.message : e);
     return NextResponse.json({ error: "The AI service is busy. Please try again shortly." }, { status: 502 });

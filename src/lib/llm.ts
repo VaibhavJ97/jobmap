@@ -97,3 +97,14 @@ export function bulletsPrompt(job: Parameters<typeof jobContext>[0]): string {
 --- JOB POSTING ---
 ${jobContext(job)}`;
 }
+
+export function personalBulletsPrompt(job: Parameters<typeof jobContext>[0], cvText: string): string {
+  const cv = cvText.replace(/\s+/g, " ").slice(0, 4000);
+  return `You are helping a specific job seeker apply to the role below, using THEIR CV. Write 4 concise, strong resume/cover-letter bullet points drawn from the candidate's real experience in the CV, each aimed at what this role values. Use only experience present in the CV — do not invent employers, numbers, or skills they don't have. If the CV lacks something the role wants, emphasize the closest genuine strength instead. Return only the 4 bullets as markdown "- " lines, under 100 words total.
+
+--- JOB POSTING ---
+${jobContext(job)}
+
+--- CANDIDATE CV ---
+${cv}`;
+}
