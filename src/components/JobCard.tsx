@@ -24,7 +24,6 @@ type SkillGap = { required: string[]; have: string[]; missing: string[] };
 
 export default function JobCard({
   job,
-  onOpen,
   saved,
   onToggleSave,
   authed,
@@ -116,14 +115,6 @@ export default function JobCard({
       {job.location && <div className="card-loc">{job.location}</div>}
 
       <div className="card-actions">
-        {job.url && (
-          <a className="act-btn act-apply" href={job.url} target="_blank" rel="noopener noreferrer">
-            Apply &#8599;
-          </a>
-        )}
-        <button className="act-btn" onClick={() => onOpen(job)}>
-          Details &#8599;
-        </button>
         <button className="act-btn" onClick={runCheck} disabled={gapLoading}>
           {gapLoading ? "Checking\u2026" : "\u25ce Check match"}
         </button>
@@ -133,6 +124,11 @@ export default function JobCard({
         <button className={`save-btn ${saved ? "saved" : ""}`} onClick={() => onToggleSave(job)}>
           {saved ? "\u2713 Saved" : "+ Save"}
         </button>
+        {job.url && (
+          <a className="act-btn act-apply apply-right" href={job.url} target="_blank" rel="noopener noreferrer">
+            Apply &#8599;
+          </a>
+        )}
       </div>
 
       {(gapLoading || gap || gapError) && (

@@ -70,7 +70,7 @@ export async function POST(request: Request) {
   }
 
   // Job embeddings are cached in a table keyed by job id, so each job is only
-  // ever embedded once — repeat matches (by anyone) cost zero embedding calls.
+  // ever embedded once - repeat matches (by anyone) cost zero embedding calls.
   try {
     await sql`
       CREATE TABLE IF NOT EXISTS job_embeddings (

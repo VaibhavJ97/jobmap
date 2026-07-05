@@ -203,6 +203,49 @@ async function fetchArbeitnow(keyword: string): Promise<Job[]> {
 }
 
 // --- Arbeitsagentur ---------------------------------------------------------
+// Extract the Arbeitsagentur reference number from a job detail URL.
+export function arbeitsagenturRefnr(url: string): string {
+  const m = (url || "").match(/jobdetail\/([^/?#]+)/);
+  return m ? decodeURIComponent(m[1]) : "";
+}
+
+// Fetch ONE Arbeitsagentur job's full description on demand (used by Check
+// match / Draft), so search stays fast and only clicked jobs cost a request.
+export async function fetchArbeitsagenturDescription(refnr: string): Promise<string> {
+  if (!refnr) return "";
+  const enc = Buffer.from(refnr).toString("base64");
+  const url = `https://rest.arbeitsagentur.de/jobboerse/jobsuche-service/pc/v4/jobdetails/${enc}`;
+  let dispatcher: unknown;
+  try {
+    const { Agent } = await import("undici");
+    dispatcher = new Agent({ connect: { rejectUnauthorized: false } });
+  } catch {
+    dispatcher = undefined;
+  }
+  try {
+    const res = await fetch(url, {
+      headers: { "X-API-Key": "jobboerse-jobsuche", ...UA },
+      // @ts-expect-error undici dispatcher is not in the standard fetch types
+      dispatcher,
+    });
+    if (!res.ok) return "";
+    const data = (await res.json()) as { stellenbeschreibung?: string };
+    return stripHtml(data.stellenbeschreibung ?? "");
+  } catch {
+    return "";
+  }
+}
+
+// Given a job's source/url/existing text, return a usable description,
+// lazily fetching it for Arbeitsagentur (which ships empty at search time).
+export async function resolveDescription(source: string, url: string, existing: string): Promise<string> {
+  if (existing && existing.trim()) return existing;
+  if (source === "ARBEITSAGENTUR") {
+    return await fetchArbeitsagenturDescription(arbeitsagenturRefnr(url));
+  }
+  return existing ?? "";
+}
+
 async function fetchArbeitsagentur(keyword: string, location: string): Promise<Job[]> {
   const params = new URLSearchParams({ was: keyword, angebotsart: "1", size: "40", pav: "false" });
   if (location) params.set("wo", location);

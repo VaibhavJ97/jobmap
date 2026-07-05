@@ -16,7 +16,7 @@ function getLimiter(): Ratelimit | null {
   }
   _limiter = new Ratelimit({
     redis: new Redis({ url, token }),
-    // 12 searches per minute per visitor — comfortable for humans, hostile to bots.
+    // 12 searches per minute per visitor - comfortable for humans, hostile to bots.
     limiter: Ratelimit.slidingWindow(12, "60 s"),
     prefix: "jobmap:search",
     analytics: false,

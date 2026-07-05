@@ -32,7 +32,7 @@ async function extractText(file: File): Promise<string> {
   return buf.toString("utf8");
 }
 
-// GET — does the signed-in user have a CV, and a short preview.
+// GET - does the signed-in user have a CV, and a short preview.
 export async function GET() {
   const uid = await userId();
   if (!uid) return NextResponse.json({ hasCv: false });
@@ -54,7 +54,7 @@ export async function GET() {
   }
 }
 
-// POST — upload a CV as a file (multipart) or as pasted text (JSON { text }).
+// POST - upload a CV as a file (multipart) or as pasted text (JSON { text }).
 export async function POST(request: Request) {
   const uid = await userId();
   if (!uid) return NextResponse.json({ error: "Sign in to upload a CV." }, { status: 401 });
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
   }
 }
 
-// DELETE — remove the user's CV.
+// DELETE - remove the user's CV.
 export async function DELETE() {
   const uid = await userId();
   if (!uid) return NextResponse.json({ error: "Sign in first." }, { status: 401 });

@@ -36,7 +36,7 @@ export async function POST(request: Request) {
 
   // For personalized bullets, load the user's CV (if any). This changes both
   // the prompt and the cache key (so each user's CV yields its own cached copy,
-  // invalidated when they re-upload — the key includes the CV timestamp).
+  // invalidated when they re-upload - the key includes the CV timestamp).
   let cvText = "";
   let cacheKey = `${kind}:${job.id}`;
   let personalized = false;
@@ -51,11 +51,11 @@ export async function POST(request: Request) {
         cacheKey = `bullets:${userId}:${stamp}:${job.id}`;
       }
     } catch {
-      /* no CV — fall back to generic bullets */
+      /* no CV - fall back to generic bullets */
     }
   }
 
-  // Cache first — zero AI usage on repeats.
+  // Cache first - zero AI usage on repeats.
   if (sql) {
     try {
       const rows = await sql`SELECT content FROM ai_cache WHERE cache_key = ${cacheKey}`;
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     }
   }
 
-  // Only cache misses cost quota — rate-limit those per user.
+  // Only cache misses cost quota - rate-limit those per user.
   const allowed = await allowAi(userId);
   if (!allowed) {
     return NextResponse.json({ error: "AI limit reached (5/hour). Please try again later." }, { status: 429 });

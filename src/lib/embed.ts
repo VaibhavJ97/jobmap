@@ -1,4 +1,4 @@
-// Embedding helper — turns text into a vector using Gemini's embedding model.
+// Embedding helper - turns text into a vector using Gemini's embedding model.
 // Used to store a CV embedding (Phase 3a) and, later, job embeddings for
 // semantic matching (Phase 3b). Kept separate from llm.ts for clarity.
 

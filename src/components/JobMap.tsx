@@ -48,7 +48,7 @@ export default function JobMap({ jobs, onOpen }: { jobs: Job[]; onOpen: (job: Jo
                     }}
                     href={`/jobs/${j.id}`}
                   >
-                    {j.title} — {j.company}
+                    {j.title} - {j.company}
                   </a>
                 ))}
               </div>

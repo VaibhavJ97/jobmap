@@ -3,6 +3,7 @@ import { z } from "zod";
 import { auth } from "@/auth";
 import { getSql, ensureCvSchema } from "@/lib/db";
 import { skillGap } from "@/lib/skills";
+import { resolveDescription } from "@/lib/sources";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -12,6 +13,8 @@ const Schema = z.object({
     .object({
       title: z.string().optional().default(""),
       description: z.string().optional().default(""),
+      source: z.string().optional().default(""),
+      url: z.string().optional().default(""),
     })
     .passthrough(),
 });
@@ -41,8 +44,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Upload your CV first to compare skills." }, { status: 400 });
   }
 
+  // Pull the real description on demand (Arbeitsagentur ships empty at search).
+  const description = await resolveDescription(job.source ?? "", job.url ?? "", job.description ?? "");
+
   // Pure keyword comparison, no AI: what the role names, what your CV shows.
-  const jobText = `${job.title ?? ""} ${(job.description ?? "").replace(/<[^>]+>/g, " ")}`;
+  const jobText = `${job.title ?? ""} ${description.replace(/<[^>]+>/g, " ")}`;
   const gap = skillGap(jobText, cvText);
   return NextResponse.json(gap);
 }

@@ -4,6 +4,7 @@ import { auth } from "@/auth";
 import { getSql, ensureSchema, ensureCvSchema } from "@/lib/db";
 import { allowAi } from "@/lib/rateLimit";
 import { generate, agentAnalysisPrompt, agentCoverLetterPrompt } from "@/lib/llm";
+import { resolveDescription } from "@/lib/sources";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
 
   const cacheKey = `agent:${userId}:${stamp}:${job.id}`;
 
-  // Cache first — a full draft is expensive, so repeats cost zero quota.
+  // Cache first - a full draft is expensive, so repeats cost zero quota.
   if (sql) {
     try {
       const rows = await sql`SELECT content FROM ai_cache WHERE cache_key = ${cacheKey}`;
@@ -72,10 +73,17 @@ export async function POST(request: Request) {
   }
 
   try {
+    // Pull the real description on demand (Arbeitsagentur ships empty at search).
+    const description = await resolveDescription(
+      (job as { source?: string }).source ?? "",
+      (job as { url?: string }).url ?? "",
+      job.description ?? "",
+    );
+    const fullJob = { ...job, description };
     // Step 1: analyze fit (requirements / strengths / gaps).
-    const analysis = await generate(agentAnalysisPrompt(job, cvText));
+    const analysis = await generate(agentAnalysisPrompt(fullJob, cvText));
     // Step 2: write the letter, grounded in step 1's analysis.
-    const coverLetter = await generate(agentCoverLetterPrompt(job, cvText, analysis));
+    const coverLetter = await generate(agentCoverLetterPrompt(fullJob, cvText, analysis));
 
     const result = { analysis, coverLetter };
     if (sql) {

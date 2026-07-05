@@ -3,7 +3,7 @@ import "./globals.css";
 import Providers from "./providers";
 
 export const metadata: Metadata = {
-  title: "JobMap — European job search on a map",
+  title: "JobMap - European job search on a map",
   description:
     "Search European tech jobs across multiple sources, ranked by relevance and plotted on an interactive map. Built by Vaibhav Jaiswal.",
 };

@@ -1,6 +1,6 @@
 import type { Job, SearchPrefs } from "./types";
 
-// Every weight in one place — tune behaviour here. Mirrors the Python engine.
+// Every weight in one place - tune behaviour here. Mirrors the Python engine.
 const W = {
   titleAll: 45,
   titleExact: 20,
