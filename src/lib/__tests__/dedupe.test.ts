@@ -30,6 +30,14 @@ describe("deduplicate", () => {
     expect(deduplicate(jobs)).toHaveLength(1);
   });
 
+  it("keeps same title+company in different cities as distinct jobs", () => {
+    const jobs = [
+      makeJob({ title: "Programmierer", company: "RSB GmbH", location: "Essen, NRW" }),
+      makeJob({ title: "Programmierer", company: "RSB GmbH", location: "Munich, Bayern" }),
+    ];
+    expect(deduplicate(jobs)).toHaveLength(2);
+  });
+
   it("prefers the higher-priority source when merging", () => {
     const jobs = [
       makeJob({ title: "SRE", company: "Umbrella", source: "REMOTIVE", sourceLabel: "Remotive" }),

@@ -146,6 +146,11 @@ function enrich(j: Job): Job {
   const location = decodeEntities(j.location);
   return {
     ...j,
+    // Include location so genuinely different postings that share a title and
+    // company (common on Arbeitsagentur) do not collapse into one during
+    // dedupe, while cross-board copies of the same job (same title, company
+    // and city) still merge into a single card.
+    id: makeId(`${title}|${location}`, company),
     title,
     company,
     location,
